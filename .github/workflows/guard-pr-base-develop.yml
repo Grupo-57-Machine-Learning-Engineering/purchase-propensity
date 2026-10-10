@@ -1,0 +1,32 @@
+# Garante que PRs para a main venham somente da branch `develop`.
+# Rulesets/branch protection não estão disponíveis (repo privado em org free),
+# então este workflow é o guard do fluxo develop -> main no lado do CI.
+
+name: "Guard: PR to main only from develop"
+
+on:
+  pull_request:
+    # edited cobre retarget de base pela UI (PR aberto pra outra branch,
+    # depois trocado para main); sem isso, o PR passaria sem checagem.
+    types: [opened, reopened, edited, synchronize]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar que a branch de origem é develop
+        env:
+          # Via env, não interpolado no script: nome de branch é controlado por
+          # quem abre o PR e poderia injetar comando no shell.
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if [ "$HEAD_REF" != "develop" ]; then
+            echo "::error::PRs para main devem vir somente de develop. Branch de origem atual: '$HEAD_REF'."
+            exit 1
+          fi
+
+          echo "OK: PR para main vem de develop."

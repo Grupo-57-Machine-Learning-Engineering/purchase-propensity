@@ -50,6 +50,43 @@ make setup        # uv sync + hooks do git
 | `make pre-commit` | Roda todos os hooks em todos os arquivos     |
 | `make help`       | Lista todos os alvos                         |
 
+## Fluxo de contribuição
+
+Duas branches longas: `develop` (integração) e `main` (estável).
+
+- A `main` nunca recebe commit ou push direto. Código só entra nela por Pull Request
+  vindo da `develop`, com o CI verde.
+- No dia a dia, crie uma branch `<tipo>/<descrição-curta>` a partir da
+  `develop` (mesmos tipos dos commits, ex.: `eda/distribuicao-revenue`,
+  `exp/random-forest`) e integre nela via PR.
+- Rode `make setup` antes de começar: instala os hooks que bloqueiam commit e
+  push na `main`.
+
+```
+eda/revenue ───────┐
+data/dvc-pipeline ─┤
+exp/random-forest ─┼──► develop ──(PR + CI verde)──► main
+docs/model-card ───┘
+```
+
+### Gate de branches
+
+Repo privado numa org free: o GitHub não oferece branch protection/rulesets. O gate
+tem duas camadas, e nenhuma bloqueia de fato no servidor:
+
+- Hooks locais (`make setup`): `no-commit-to-branch` bloqueia commit na `main`;
+  `scripts/reject-push-to-main.sh` (em `.git/hooks/pre-push`) bloqueia push na `main`.
+  Ambos puláveis com `--no-verify`.
+- CI (`.github/workflows/`): `ci.yml` roda lint + testes;
+  `guard-pr-base-develop.yml` recusa PR para `main` que não venha da `develop`;
+  `guard-no-direct-push-main.yml` deixa o run vermelho, apontando o autor, quando
+  algum commit entra na `main` sem PR mergeado.
+
+No PR `develop -> main`, use "Create a merge commit" (não squash nem rebase):
+squash cria na `main` um commit que não existe na `develop` e as duas divergem.
+
+Se alguém furar a fila, reverta e reabra via PR da `develop`.
+
 ## Conventional Commits
 
 Formato: `<tipo>(<escopo>): descrição no imperativo`.
