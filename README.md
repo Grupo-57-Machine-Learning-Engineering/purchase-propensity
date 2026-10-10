@@ -23,17 +23,31 @@ purchase-propensity/
 ├── configs/          # configurações e hiperparâmetros
 ├── notebooks/        # EDA e exploração (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
 ├── docs/             # documentação do projeto
-└── pyproject.toml    # dependências (uv)
+├── pyproject.toml    # dependências (uv)
+└── Makefile
 ```
 
 ## Setup
 
-Pré-requisitos: [uv](https://docs.astral.sh/uv/). O Python 3.11 é provisionado pelo uv
-a partir do `.python-version`.
+Pré-requisitos: [uv](https://docs.astral.sh/uv/) e `make` num shell POSIX (no Windows,
+use o Git Bash; o `make` no PowerShell/cmd não roda os alvos). O Python 3.11 é
+provisionado pelo uv a partir do `.python-version`.
 
 ```bash
-uv sync
+make setup        # uv sync + hooks do git
 ```
+
+## Comandos (Makefile)
+
+| Comando           | O que faz                                    |
+| ----------------- | -------------------------------------------- |
+| `make setup`      | Instala dependências e hooks do git          |
+| `make install`    | Instala dependências a partir do lock        |
+| `make lint`       | `ruff check` + checagem de formatação        |
+| `make format`     | Formata e auto-corrige com ruff              |
+| `make test`       | Roda os testes (pytest)                      |
+| `make pre-commit` | Roda todos os hooks em todos os arquivos     |
+| `make help`       | Lista todos os alvos                         |
 
 ## Conventional Commits
 
