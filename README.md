@@ -15,7 +15,8 @@ purchase-propensity/
 │   ├── data/         # carregamento e split
 │   ├── features/     # pré-processamento
 │   ├── models/       # definição dos modelos
-│   └── training/     # treino, avaliação e registro no MLflow
+│   ├── training/     # treino, avaliação e registro no MLflow
+│   └── config.py     # paths
 ├── tests/            # pytest
 ├── data/             # dados locais (fora do git)
 ├── models/           # artefatos treinados (não versionados no git)
