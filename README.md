@@ -23,6 +23,7 @@ purchase-propensity/
 ├── configs/          # configurações e hiperparâmetros
 ├── notebooks/        # EDA e exploração (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
 ├── docs/             # documentação do projeto
+├── .github/          # CI
 ├── pyproject.toml    # dependências (uv)
 └── Makefile
 ```
