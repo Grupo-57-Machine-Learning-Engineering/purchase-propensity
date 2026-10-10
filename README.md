@@ -79,6 +79,7 @@ tem duas camadas, e nenhuma bloqueia de fato no servidor:
   Ambos puláveis com `--no-verify`.
 - CI (`.github/workflows/`): `ci.yml` roda lint + testes;
   `guard-pr-base-develop.yml` recusa PR para `main` que não venha da `develop`;
+  `guard-pr-title.yml` recusa título de PR fora do padrão de commits;
   `guard-no-direct-push-main.yml` deixa o run vermelho, apontando o autor, quando
   algum commit entra na `main` sem PR mergeado.
 
@@ -118,4 +119,5 @@ feat(registry): promove melhor modelo para champion
 ```
 
 O padrão é validado no `commit-msg` por hook (commitizen, tipos definidos no
-`pyproject.toml`); tipo fora da tabela (ex.: `wip`) é recusado.
+`pyproject.toml`); tipo fora da tabela (ex.: `wip`) é recusado. O título do PR
+segue o mesmo padrão, porque vira a mensagem do commit de merge.
