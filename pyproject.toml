@@ -1,0 +1,72 @@
+[project]
+name = "purchase-propensity"
+version = "0.1.0"
+description = "Projeto da Fase 2 da Pós Tech de Machine Learning Engineering - FIAP"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.0",
+    "pre-commit>=3.7",
+    "commitizen>=3.29",
+]
+
+[tool.uv]
+# O projeto não é instalado como pacote; o pytest acha `src` via pythonpath.
+package = false
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# N: naming, ANN: type hints, PLR0915: funções curtas (máx. 20 statements)
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "N", "ANN", "PLR0915"]
+
+[tool.ruff.lint.pylint]
+max-statements = 20
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+# Conventional Commits + tipos de ML (data, eda, exp). O hook commit-msg valida
+# a mensagem contra o schema_pattern abaixo.
+[tool.commitizen]
+name = "cz_customize"
+
+[tool.commitizen.customize]
+schema = "<tipo>(<escopo>): <descrição>"
+schema_pattern = "(?s)(feat|fix|docs|refactor|data|eda|exp|test|ci|build|chore)(\\([^)\\s]+\\))?!?: [^\\n\\r]+((\\n\\n.*)|(\\s*))?$"
+example = "exp(model): compara random forest e regressao logistica"
+message_template = "{{change_type}}{% if scope %}({{scope}}){% endif %}: {{message}}"
+
+[[tool.commitizen.customize.questions]]
+type = "list"
+name = "change_type"
+message = "Tipo da mudança"
+choices = [
+    { value = "feat", name = "feat: nova funcionalidade" },
+    { value = "fix", name = "fix: correção de bug" },
+    { value = "data", name = "data: dados, DVC, ingestão e preparação" },
+    { value = "eda", name = "eda: análise exploratória" },
+    { value = "exp", name = "exp: experimento de modelo (treino, tuning)" },
+    { value = "test", name = "test: adição ou ajuste de testes" },
+    { value = "refactor", name = "refactor: mudança sem alterar comportamento" },
+    { value = "docs", name = "docs: documentação" },
+    { value = "ci", name = "ci: workflows do GitHub Actions" },
+    { value = "build", name = "build: build, Makefile, Docker" },
+    { value = "chore", name = "chore: config, dependências, manutenção" },
+]
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "scope"
+message = "Escopo (opcional, ex.: model, dvc, mlflow)"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "message"
+message = "Descrição curta no imperativo"

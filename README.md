@@ -21,5 +21,15 @@ purchase-propensity/
 ├── models/           # artefatos treinados (não versionados no git)
 ├── configs/          # configurações e hiperparâmetros
 ├── notebooks/        # EDA e exploração (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
-└── docs/             # documentação do projeto
+├── docs/             # documentação do projeto
+└── pyproject.toml    # dependências (uv)
+```
+
+## Setup
+
+Pré-requisitos: [uv](https://docs.astral.sh/uv/). O Python 3.11 é provisionado pelo uv
+a partir do `.python-version`.
+
+```bash
+uv sync
 ```
