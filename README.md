@@ -85,6 +85,9 @@ tem duas camadas, e nenhuma bloqueia de fato no servidor:
 No PR `develop -> main`, use "Create a merge commit" (não squash nem rebase):
 squash cria na `main` um commit que não existe na `develop` e as duas divergem.
 
+Depois do merge, `cleanup-merged-branch.yml` apaga a branch de origem do PR, nunca a
+`develop` nem a `main`.
+
 Se alguém furar a fila, reverta e reabra via PR da `develop`.
 
 ## Conventional Commits
