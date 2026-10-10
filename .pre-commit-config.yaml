@@ -2,6 +2,8 @@
 # O hook de pre-push (bloqueio de push na main) é instalado à parte pelo make setup.
 # Rode em tudo com: make pre-commit
 default_install_hook_types: [pre-commit, commit-msg]
+# Sem isto, os hooks sem `stages` rodariam também no commit-msg (duas vezes por commit).
+default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
