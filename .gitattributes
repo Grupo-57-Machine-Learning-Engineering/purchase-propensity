@@ -1,0 +1,2 @@
+# Scripts shell sempre com LF: com CRLF (padrão do git no Windows) o bash quebra.
+*.sh text eol=lf

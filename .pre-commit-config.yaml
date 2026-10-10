@@ -1,0 +1,32 @@
+# Hooks de commit (pre-commit + commit-msg). Instale com: make setup.
+# O hook de pre-push (bloqueio de push na main) é instalado à parte pelo make setup.
+# Rode em tudo com: make pre-commit
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-merge-conflict
+      # Bloqueia commit direto na main (fluxo correto: develop -> PR -> main).
+      - id: no-commit-to-branch
+        args: ["--branch", "main"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.19.2
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]

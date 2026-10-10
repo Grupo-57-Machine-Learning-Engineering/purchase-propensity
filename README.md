@@ -34,3 +34,33 @@ a partir do `.python-version`.
 ```bash
 uv sync
 ```
+
+## Conventional Commits
+
+Formato: `<tipo>(<escopo>): descrição no imperativo`.
+
+| Tipo       | Quando usar                               |
+| ---------- | ----------------------------------------- |
+| `feat`     | nova funcionalidade                       |
+| `fix`      | correção de bug                           |
+| `docs`     | documentação                              |
+| `refactor` | mudança de código sem mudar comportamento |
+| `data`     | dados: DVC, ingestão, limpeza, preparação |
+| `eda`      | análise exploratória (notebooks, achados) |
+| `exp`      | experimento de modelo (treino, tuning)    |
+| `test`     | adição ou ajuste de testes                |
+| `ci`       | workflows do GitHub Actions               |
+| `build`    | build, Makefile, Docker                   |
+| `chore`    | infra, config, dependências               |
+
+Exemplos:
+
+```
+eda: analisa distribuicao de Revenue por mes
+data(dvc): versiona dataset online shoppers
+exp(model): compara random forest e regressao logistica
+feat(registry): promove melhor modelo para champion
+```
+
+O padrão é validado no `commit-msg` por hook (commitizen, tipos definidos no
+`pyproject.toml`); tipo fora da tabela (ex.: `wip`) é recusado.
