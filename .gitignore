@@ -1,0 +1,42 @@
+# --- Dados e artefatos (versionados pelo DVC, não pelo git) -----------------
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+models/*
+!models/.gitkeep
+mlruns/
+mlartifacts/
+
+# --- Segredos ----------------------------------------------------------------
+.env
+
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# --- Ambientes virtuais ------------------------------------------------------
+.venv/
+venv/
+env/
+
+# --- Ferramentas / caches ----------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# --- Notebooks ---------------------------------------------------------------
+.ipynb_checkpoints/
+
+# --- IDE / SO -----------------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
