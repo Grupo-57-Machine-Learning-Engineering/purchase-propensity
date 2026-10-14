@@ -1,4 +1,4 @@
-.PHONY: help setup install lint format test pre-commit clean
+.PHONY: help setup install lint format test etl pre-commit clean
 
 help: ## Lista os alvos disponíveis
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -23,6 +23,9 @@ format: ## Formata o código com ruff
 
 test: ## Roda a suíte de testes (pytest)
 	uv run pytest
+
+etl: ## Baixa o dataset da UCI e gera data/processed/online_shoppers.parquet
+	uv run python -m src.data.pipeline
 
 pre-commit: ## Roda todos os hooks de pre-commit em todos os arquivos
 	uv run pre-commit run --all-files

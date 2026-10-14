@@ -7,12 +7,22 @@ do comportamento de navegação. O foco é a engenharia de ML: modelo clássico 
 Scikit-Learn, dados e pipeline versionados com DVC, experimentos e Model Registry
 no MLflow e execução em Docker.
 
+## Dataset
+
+[Online Shoppers Purchasing Intention](https://archive.ics.uci.edu/dataset/468) (UCI): 12.330
+sessões de navegação com 17 features e o alvo `Revenue` (a sessão terminou em compra;
+15,5% positivos).
+
+`make etl` baixa o CSV para `data/raw/` e grava `data/processed/online_shoppers.parquet`,
+com colunas em snake_case e meses padronizados. O ETL não remove linhas: as 125
+duplicadas ficam para a EDA decidir.
+
 ## Estrutura
 
 ```
 purchase-propensity/
 ├── src/
-│   ├── data/         # carregamento e split
+│   ├── data/         # ETL: extração, transformação e carga
 │   ├── features/     # pré-processamento
 │   ├── models/       # definição dos modelos
 │   ├── training/     # treino, avaliação e registro no MLflow
@@ -47,6 +57,7 @@ make setup        # uv sync + hooks do git
 | `make lint`       | `ruff check` + checagem de formatação        |
 | `make format`     | Formata e auto-corrige com ruff              |
 | `make test`       | Roda os testes (pytest)                      |
+| `make etl`        | Baixa o dataset e gera `data/processed/`     |
 | `make pre-commit` | Roda todos os hooks em todos os arquivos     |
 | `make help`       | Lista todos os alvos                         |
 
