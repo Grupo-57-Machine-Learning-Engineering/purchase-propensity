@@ -7,16 +7,30 @@ do comportamento de navegação. O foco é a engenharia de ML: modelo clássico 
 Scikit-Learn, dados e pipeline versionados com DVC, experimentos e Model Registry
 no MLflow e execução em Docker.
 
+## Dataset
+
+[Customer Propensity to Purchase](https://www.kaggle.com/datasets/benpowis/customer-propensity-to-purchase-data)
+(Kaggle, CC0): um dia de visitas a uma loja online fictícia. São 455.401 usuários, 23 flags
+de comportamento (cliques, páginas vistas, dispositivo, localização) e o alvo `ordered`
+(fez pedido; 4,2% positivos).
+
+`make etl` baixa o dataset com o `kagglehub`, sem precisar de token, e grava
+`data/processed/customer_propensity.parquet` com `UserID` renomeado para `user_id` e as
+flags 0/1 como booleanos. O ETL não remove colunas: `checked_delivery_detail` e
+`saw_checkout` têm correlação alta com `ordered` (0,80 e 0,71), e a EDA decide se elas
+entram no modelo. O `testing_sample.csv` do Kaggle não é usado porque vem com `ordered`
+zerado.
+
 ## Estrutura
 
 ```
 purchase-propensity/
 ├── src/
-│   ├── data/         # carregamento e split
+│   ├── data/         # ETL: extração, transformação e carga
 │   ├── features/     # pré-processamento
 │   ├── models/       # definição dos modelos
 │   ├── training/     # treino, avaliação e registro no MLflow
-│   └── config.py     # paths
+│   └── config.py     # paths, dataset e leitura do .env
 ├── tests/            # pytest
 ├── data/             # dados locais (fora do git)
 ├── models/           # artefatos treinados (não versionados no git)
@@ -24,6 +38,7 @@ purchase-propensity/
 ├── notebooks/        # EDA e exploração (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
 ├── docs/             # documentação do projeto
 ├── .github/          # CI e template de PR
+├── .env.example      # modelo do .env (configurações)
 ├── pyproject.toml    # dependências (uv)
 └── Makefile
 ```
@@ -38,6 +53,13 @@ provisionado pelo uv a partir do `.python-version`.
 make setup        # uv sync + hooks do git
 ```
 
+As configurações (dataset, pasta de dados, nível de log) ficam no `.env`. Ele é opcional:
+sem ele, valem os padrões do `.env.example`. Para mudar algum valor:
+
+```bash
+cp .env.example .env
+```
+
 ## Comandos (Makefile)
 
 | Comando           | O que faz                                    |
@@ -47,6 +69,7 @@ make setup        # uv sync + hooks do git
 | `make lint`       | `ruff check` + checagem de formatação        |
 | `make format`     | Formata e auto-corrige com ruff              |
 | `make test`       | Roda os testes (pytest)                      |
+| `make etl`        | Baixa o dataset e gera `data/processed/`     |
 | `make pre-commit` | Roda todos os hooks em todos os arquivos     |
 | `make help`       | Lista todos os alvos                         |
 
