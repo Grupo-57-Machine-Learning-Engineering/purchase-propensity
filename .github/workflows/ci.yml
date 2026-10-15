@@ -1,7 +1,7 @@
 # CI padrão do projeto: lint (ruff) + testes (pytest) via uv.
 # Roda em push e PR para main/develop e valida o código em si.
-# Os guards de fluxo de branch são workflows separados:
-# guard-no-direct-push-main.yml e guard-pr-base-develop.yml.
+# Os guards e a limpeza de branch são workflows separados: guard-no-direct-push-main.yml,
+# guard-pr-base-develop.yml, guard-pr-title.yml e cleanup-merged-branch.yml.
 
 name: CI
 
