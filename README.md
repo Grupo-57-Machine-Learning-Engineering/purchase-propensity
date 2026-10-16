@@ -73,6 +73,30 @@ cp .env.example .env
 | `make pre-commit` | Roda todos os hooks em todos os arquivos     |
 | `make help`       | Lista todos os alvos                         |
 
+## Treino e MLflow
+
+O baseline de Regressão Logística lê `data/processed/customer_propensity.parquet`
+(gerado por `make etl`) e grava a run no MLflow:
+
+```bash
+uv run python -m src.training.baseline
+uv run python -m src.training.baseline --run-name baseline-logreg-seed7
+```
+
+- **Split:** estratificado pelo alvo `ordered`, com seed fixo (`src/training/split.py`).
+- **Vazamento:** `saw_checkout` e `checked_delivery_detail` ficam fora das features por
+  padrão (`LEAKAGE_COLUMNS` em `src/config.py`).
+- **Métricas:** PR-AUC como principal, mais ROC-AUC, precisão e recall no threshold
+  (`src/training/metrics.py`), registradas para treino (`train_*`) e teste (`test_*`).
+- **Reuso:** split, métricas e `fit_and_evaluate` não dependem do modelo, então Random
+  Forest e HistGB entram trocando só o estimador.
+- **Tracking:** experiment `purchase-propensity`, com as tags `autor`, `git_sha` e
+  `dataset_version` (hash do parquet). Nesta etapa nada vai para o Model Registry.
+
+A URI e as credenciais do MLflow vêm só do ambiente (`MLFLOW_TRACKING_URI`,
+`MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD`, que podem ficar no `.env`).
+Sem `MLFLOW_TRACKING_URI`, a run é gravada em `./mlruns`, que não vai para o git.
+
 ## Fluxo de contribuição
 
 Duas branches longas: `develop` (integração) e `main` (estável).
