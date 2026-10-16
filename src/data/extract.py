@@ -1,6 +1,5 @@
 """Extração: baixa o dataset do Kaggle e copia o CSV bruto para data/raw."""
 
-import logging
 import shutil
 from pathlib import Path
 
@@ -8,8 +7,9 @@ import kagglehub
 import pandas as pd
 
 from src.config import DATASET_HANDLE, RAW_DATA_FILE, RAW_DATA_FILENAME
+from src.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def download_raw(
