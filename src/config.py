@@ -44,3 +44,17 @@ PROCESSED_DATA_FILE: Path = PROCESSED_DATA_DIR / "customer_propensity.parquet"
 
 # --- Logging -----------------------------------------------------------------
 LOG_LEVEL: str = env("LOG_LEVEL", "INFO").upper()
+
+# --- Treino ------------------------------------------------------------------
+TARGET_COLUMN: str = "ordered"
+# Passos de checkout acontecem perto da compra (correlação de 0,71 e 0,80 com o alvo).
+# Usá-los como feature é vazamento, então ficam fora do treino por padrão.
+LEAKAGE_COLUMNS: tuple[str, ...] = ("saw_checkout", "checked_delivery_detail")
+RANDOM_SEED: int = 42
+TEST_SIZE: float = 0.2
+DECISION_THRESHOLD: float = 0.5
+
+# --- MLflow ------------------------------------------------------------------
+# URI e credenciais vêm só das variáveis de ambiente (MLFLOW_TRACKING_URI,
+# MLFLOW_TRACKING_USERNAME e MLFLOW_TRACKING_PASSWORD), que o próprio MLflow lê.
+MLFLOW_EXPERIMENT_NAME: str = "purchase-propensity"
