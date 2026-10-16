@@ -38,7 +38,8 @@ MODELS_DIR: Path = PROJECT_ROOT / "models"
 DATASET_HANDLE: str = env(
     "DATASET_HANDLE", "benpowis/customer-propensity-to-purchase-data/versions/3"
 )
-RAW_DATA_FILE: Path = RAW_DATA_DIR / "training_sample.csv"
+RAW_DATA_FILENAME: str = "training_sample.csv"
+RAW_DATA_FILE: Path = RAW_DATA_DIR / RAW_DATA_FILENAME
 PROCESSED_DATA_FILE: Path = PROCESSED_DATA_DIR / "customer_propensity.parquet"
 
 # --- Logging -----------------------------------------------------------------
