@@ -37,6 +37,7 @@ def download_raw(
         tmp.replace(dest)
     finally:
         tmp.unlink(missing_ok=True)
+    logger.info("Dataset bruto salvo em %s", dest)
     return dest
 
 
