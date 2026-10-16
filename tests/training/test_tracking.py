@@ -1,26 +1,13 @@
 """Testes do registro no MLflow, sempre num banco SQLite temporário."""
 
-from collections.abc import Iterator
 from pathlib import Path
 
-import mlflow
 import pandas as pd
-import pytest
 from mlflow.tracking import MlflowClient
 from sklearn.linear_model import LogisticRegression
 
 from src.config import MLFLOW_EXPERIMENT_NAME
 from src.training.tracking import build_tags, get_dataset_version, log_run
-
-
-@pytest.fixture
-def local_mlflow(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[MlflowClient]:
-    """Aponta o MLflow para uma pasta temporária, nunca para o servidor do .env."""
-    monkeypatch.chdir(tmp_path)
-    uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
-    mlflow.set_tracking_uri(uri)
-    yield MlflowClient(uri)
-    mlflow.set_tracking_uri(None)
 
 
 def test_dataset_version_is_stable_and_follows_content(tmp_path: Path) -> None:
