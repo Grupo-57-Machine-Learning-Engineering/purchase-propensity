@@ -18,11 +18,14 @@ from src.config import (
     RANDOM_SEED,
     TEST_SIZE,
 )
+from src.logger import get_logger
 from src.training.split import SplitData, stratified_split
 from src.training.tracking import build_tags, log_run
 from src.training.train import fit_and_evaluate
 
 DEFAULT_RUN_NAME = "baseline-logreg-balanced-no-leakage"
+
+logger = get_logger(__name__)
 
 
 def build_baseline(seed: int = RANDOM_SEED) -> LogisticRegression:
@@ -58,8 +61,10 @@ def run_baseline(
 ) -> str:
     """Treina o baseline, grava a run no MLflow e devolve o `run_id`."""
     data = stratified_split(pd.read_parquet(data_path))
+    logger.info("Treinando baseline em %d linhas de treino", len(data.features_train))
     result = fit_and_evaluate(build_baseline(), data, threshold)
-    return log_run(
+    logger.info("Métricas: %s", {name: round(v, 4) for name, v in result.metrics.items()})
+    run_id = log_run(
         run_name=run_name,
         model=result.model,
         params=build_params(build_baseline(), data, threshold),
@@ -67,6 +72,8 @@ def run_baseline(
         tags=build_tags(data_path),
         input_example=data.features_train.head(5),
     )
+    logger.info("Run registrada no MLflow: %s", run_id)
+    return run_id
 
 
 def main() -> None:
