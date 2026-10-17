@@ -96,7 +96,16 @@ uv run python -m src.training.baseline --run-name baseline-logreg-seed7
 
 A URI e as credenciais do MLflow vêm só do ambiente (`MLFLOW_TRACKING_URI`,
 `MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD`, que podem ficar no `.env`).
-Sem `MLFLOW_TRACKING_URI`, a run é gravada em `./mlruns`, que não vai para o git.
+Para rodar sem enviar nada ao servidor, sobrescreva a URI só naquele comando (variável
+já definida no shell tem prioridade sobre o `.env`):
+
+```bash
+MLFLOW_TRACKING_URI=sqlite:///mlflow.db uv run python -m src.training.baseline
+uv run mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+O `mlflow.db` e a pasta `mlruns/` ficam na raiz e não vão para o git. Sem
+`MLFLOW_TRACKING_URI` em lugar nenhum, o MLflow já usa `sqlite:///mlflow.db`.
 
 ## Fluxo de contribuição
 
