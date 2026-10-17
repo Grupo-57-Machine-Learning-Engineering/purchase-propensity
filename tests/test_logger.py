@@ -1,6 +1,5 @@
 """Testes do logger centralizado."""
 
-import logging
 import os
 import subprocess
 import sys
@@ -15,18 +14,16 @@ def test_get_logger_devolve_logger_com_o_nome_pedido() -> None:
     assert get_logger("src.teste").name == "src.teste"
 
 
-def test_get_logger_nao_duplica_handlers() -> None:
-    get_logger("src.primeiro")
-    handlers_antes = len(logging.getLogger().handlers)
+def test_mensagem_sai_uma_vez_no_formato_padrao() -> None:
+    """Roda num processo limpo, onde o logging ainda não foi configurado.
 
-    get_logger("src.segundo")
-
-    assert len(logging.getLogger().handlers) == handlers_antes
-
-
-def test_mensagem_sai_no_formato_padrao() -> None:
-    """Roda num processo limpo, onde o logging ainda não foi configurado."""
-    codigo = "from src.logger import get_logger; get_logger('mod').info('oi')"
+    No pytest o root logger já tem handlers e o `basicConfig` vira no-op, então
+    só num subprocesso a configuração é de fato exercitada. Chamar `get_logger`
+    duas vezes garante que a segunda chamada não duplica o handler.
+    """
+    codigo = (
+        "from src.logger import get_logger; get_logger('primeiro'); get_logger('mod').info('oi')"
+    )
 
     resultado = subprocess.run(
         [sys.executable, "-c", codigo],
@@ -37,4 +34,5 @@ def test_mensagem_sai_no_formato_padrao() -> None:
         check=True,
     )
 
+    assert resultado.stderr.count("oi") == 1
     assert " | INFO     | mod | oi" in resultado.stderr
