@@ -30,7 +30,8 @@ purchase-propensity/
 │   ├── features/     # pré-processamento
 │   ├── models/       # definição dos modelos
 │   ├── training/     # treino, avaliação e registro no MLflow
-│   └── config.py     # paths, dataset e leitura do .env
+│   ├── config.py     # paths, dataset e leitura do .env
+│   └── logger.py     # logger centralizado (formato e nível únicos)
 ├── tests/            # pytest
 ├── data/             # dados locais (fora do git)
 ├── models/           # artefatos treinados (não versionados no git)
