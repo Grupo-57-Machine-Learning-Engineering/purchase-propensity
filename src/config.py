@@ -51,7 +51,7 @@ TARGET_COLUMN: str = "ordered"
 # Usá-los como feature é vazamento, então ficam fora do treino por padrão.
 LEAKAGE_COLUMNS: tuple[str, ...] = ("saw_checkout", "checked_delivery_detail")
 RANDOM_SEED: int = 42
-TEST_SIZE: float = 0.2
+TEST_SIZE: float = 0.3
 DECISION_THRESHOLD: float = 0.5
 
 # --- MLflow ------------------------------------------------------------------
