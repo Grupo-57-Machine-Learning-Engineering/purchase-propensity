@@ -21,6 +21,19 @@ flags 0/1 como booleanos. O ETL não remove colunas: `checked_delivery_detail` e
 entram no modelo. O `testing_sample.csv` do Kaggle não é usado porque vem com `ordered`
 zerado.
 
+### Principais achados da EDA
+
+A análise completa está em [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb).
+
+- Todo pedido passou pelo checkout. `saw_checkout`, `checked_delivery_detail` e `sign_in`
+  acontecem junto com a compra (vazamento) e ficam fora do cenário principal de
+  modelagem.
+- Sem essas três features, a PR-AUC na validação cruzada fica em ~0,37-0,41, contra 0,04
+  da linha de base. Com elas, chega a ~0,91, mas só reconhece quem já está comprando.
+- O carrinho é o melhor sinal legítimo de intenção (lift de 6,5x a 7,2x). Desktop e
+  usuário recorrente convertem mais; o recorrente no computador converte 8,1%, contra
+  2,3% do novo no celular.
+
 ## Estrutura
 
 ```
@@ -71,6 +84,7 @@ cp .env.example .env
 | `make format`     | Formata e auto-corrige com ruff              |
 | `make test`       | Roda os testes (pytest)                      |
 | `make etl`        | Baixa o dataset e gera `data/processed/`     |
+| `make eda`        | Reexecuta o notebook de EDA                  |
 | `make pre-commit` | Roda todos os hooks em todos os arquivos     |
 | `make help`       | Lista todos os alvos                         |
 
