@@ -1,4 +1,4 @@
-.PHONY: help setup install lint format test etl pre-commit clean
+.PHONY: help setup install lint format test etl eda pre-commit clean
 
 help: ## Lista os alvos disponíveis
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -26,6 +26,10 @@ test: ## Roda a suíte de testes (pytest)
 
 etl: ## Baixa o dataset do Kaggle e gera data/processed/customer_propensity.parquet
 	uv run python -m src.data.pipeline
+
+eda: ## Reexecuta o notebook de EDA (precisa do make etl antes)
+	uv run jupyter nbconvert --to notebook --execute --inplace \
+		--ExecutePreprocessor.record_timing=False notebooks/01_eda.ipynb
 
 pre-commit: ## Roda todos os hooks de pre-commit em todos os arquivos
 	uv run pre-commit run --all-files

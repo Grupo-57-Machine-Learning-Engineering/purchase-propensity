@@ -71,6 +71,7 @@ cp .env.example .env
 | `make format`     | Formata e auto-corrige com ruff              |
 | `make test`       | Roda os testes (pytest)                      |
 | `make etl`        | Baixa o dataset e gera `data/processed/`     |
+| `make eda`        | Reexecuta o notebook de EDA                  |
 | `make pre-commit` | Roda todos os hooks em todos os arquivos     |
 | `make help`       | Lista todos os alvos                         |
 
