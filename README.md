@@ -89,13 +89,13 @@ Duas branches longas: `develop` (integração) e `main` (estável).
 - A `main` nunca recebe commit ou push direto. Código só entra nela por Pull Request
   vindo da `develop`, com o CI verde.
 - No dia a dia, crie uma branch `<tipo>/<descrição-curta>` a partir da
-  `develop` (mesmos tipos dos commits, ex.: `eda/distribuicao-revenue`,
+  `develop` (mesmos tipos dos commits, ex.: `eda/taxa-por-dispositivo`,
   `exp/random-forest`) e integre nela via PR.
 - Rode `make setup` antes de começar: instala os hooks que bloqueiam commit e
   push na `main`.
 
 ```
-eda/revenue ───────┐
+eda/funil ─────────┐
 data/dvc-pipeline ─┤
 exp/random-forest ─┼──► develop ──(PR + CI verde)──► main
 docs/model-card ───┘
@@ -144,8 +144,8 @@ Formato: `<tipo>(<escopo>): descrição no imperativo`.
 Exemplos:
 
 ```
-eda: analisa distribuicao de Revenue por mes
-data(dvc): versiona dataset online shoppers
+eda: analisa taxa de pedido por dispositivo
+data(dvc): versiona dataset customer propensity
 exp(model): compara random forest e regressao logistica
 feat(registry): promove melhor modelo para champion
 ```
