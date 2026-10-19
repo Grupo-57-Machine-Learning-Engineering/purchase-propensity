@@ -26,7 +26,7 @@ def synthetic_df() -> pd.DataFrame:
 def test_select_features_drops_id_target_and_leakage(synthetic_df: pd.DataFrame) -> None:
     features = select_features(synthetic_df)
 
-    assert list(features.columns) == ["sign_in", "basket_icon_click"]
+    assert list(features.columns) == ["basket_icon_click"]
 
 
 def test_select_features_accepts_custom_exclusion(synthetic_df: pd.DataFrame) -> None:

@@ -47,7 +47,7 @@ def test_build_params_describes_model_split_and_exclusions(processed_file: Path)
     params = build_params(build_baseline(), data, threshold=0.5)
 
     assert params["model"] == "LogisticRegression"
-    assert params["n_features"] == 2
+    assert params["n_features"] == 1
     assert params["n_train"] + params["n_test"] == 800
     assert params["excluded_columns"] == ",".join(LEAKAGE_COLUMNS)
 

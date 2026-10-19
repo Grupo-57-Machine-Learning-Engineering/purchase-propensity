@@ -15,19 +15,22 @@ from src.training.train import fit_and_evaluate
 
 @pytest.fixture
 def split_data() -> SplitData:
-    """Alvo ligado a `sign_in`, com ruído, para o modelo ter o que aprender."""
+    """Alvo ligado a `basket_icon_click`, com ruído, para o modelo ter o que aprender.
+
+    `sign_in` entra só como ruído: é coluna de vazamento e fica fora do treino.
+    """
     rng = np.random.default_rng(0)
     size = 600
-    sign_in = rng.random(size) < 0.5
+    basket_icon_click = rng.random(size) < 0.5
     noise = rng.random(size) < 0.1
     df = pd.DataFrame(
         {
             "user_id": [f"u{i}" for i in range(size)],
-            "sign_in": sign_in,
-            "basket_icon_click": rng.random(size) < 0.5,
-            "saw_checkout": sign_in,
-            "checked_delivery_detail": sign_in,
-            "ordered": sign_in ^ noise,
+            "sign_in": rng.random(size) < 0.5,
+            "basket_icon_click": basket_icon_click,
+            "saw_checkout": basket_icon_click,
+            "checked_delivery_detail": basket_icon_click,
+            "ordered": basket_icon_click ^ noise,
         }
     )
     return stratified_split(df)

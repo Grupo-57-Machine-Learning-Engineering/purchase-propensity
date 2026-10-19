@@ -47,12 +47,15 @@ LOG_LEVEL: str = env("LOG_LEVEL", "INFO").upper()
 
 # --- Treino ------------------------------------------------------------------
 TARGET_COLUMN: str = "ordered"
-# Passos de checkout acontecem perto da compra (correlação de 0,71 e 0,80 com o alvo).
-# Usá-los como feature é vazamento, então ficam fora do treino por padrão.
-LEAKAGE_COLUMNS: tuple[str, ...] = ("saw_checkout", "checked_delivery_detail")
+# As 3 flags do fim do funil descrevem a compra acontecendo, não a intenção antes
+# dela (EDA em docs/eda-findings.md, seção 8): nenhum pedido acontece sem
+# `saw_checkout`, e `sign_in` e `checked_delivery_detail` quase só aparecem em quem
+# comprou. Usá-las como feature é vazamento, então ficam fora do treino por padrão.
+LEAKAGE_COLUMNS: tuple[str, ...] = ("sign_in", "saw_checkout", "checked_delivery_detail")
 RANDOM_SEED: int = 42
 TEST_SIZE: float = 0.3
 DECISION_THRESHOLD: float = 0.5
+CV_FOLDS: int = 5
 
 # --- MLflow ------------------------------------------------------------------
 # URI e credenciais vêm só das variáveis de ambiente (MLFLOW_TRACKING_URI,
