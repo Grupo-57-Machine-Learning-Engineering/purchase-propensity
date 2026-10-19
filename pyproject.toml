@@ -17,6 +17,10 @@ dev = [
     "pytest>=8.0",
     "pre-commit>=3.7",
     "commitizen>=3.29",
+    "ipykernel>=6.29",
+    "nbconvert>=7.16",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
 ]
 
 [tool.uv]

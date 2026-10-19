@@ -21,6 +21,13 @@ flags 0/1 como booleanos. O ETL não remove colunas: `checked_delivery_detail` e
 entram no modelo. O `testing_sample.csv` do Kaggle não é usado porque vem com `ordered`
 zerado.
 
+### EDA
+
+Achados e decisões para a modelagem em [`docs/eda-findings.md`](docs/eda-findings.md); a
+análise completa está em [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb). Em resumo:
+`sign_in`, `saw_checkout` e `checked_delivery_detail` são vazamento e ficam fora do modelo,
+e o carrinho é o melhor sinal de intenção de compra.
+
 ## Estrutura
 
 ```
@@ -71,6 +78,7 @@ cp .env.example .env
 | `make format`     | Formata e auto-corrige com ruff              |
 | `make test`       | Roda os testes (pytest)                      |
 | `make etl`        | Baixa o dataset e gera `data/processed/`     |
+| `make eda`        | Reexecuta o notebook de EDA                  |
 | `make pre-commit` | Roda todos os hooks em todos os arquivos     |
 | `make help`       | Lista todos os alvos                         |
 
@@ -81,13 +89,13 @@ Duas branches longas: `develop` (integração) e `main` (estável).
 - A `main` nunca recebe commit ou push direto. Código só entra nela por Pull Request
   vindo da `develop`, com o CI verde.
 - No dia a dia, crie uma branch `<tipo>/<descrição-curta>` a partir da
-  `develop` (mesmos tipos dos commits, ex.: `eda/distribuicao-revenue`,
+  `develop` (mesmos tipos dos commits, ex.: `eda/taxa-por-dispositivo`,
   `exp/random-forest`) e integre nela via PR.
 - Rode `make setup` antes de começar: instala os hooks que bloqueiam commit e
   push na `main`.
 
 ```
-eda/revenue ───────┐
+eda/funil ─────────┐
 data/dvc-pipeline ─┤
 exp/random-forest ─┼──► develop ──(PR + CI verde)──► main
 docs/model-card ───┘
@@ -136,8 +144,8 @@ Formato: `<tipo>(<escopo>): descrição no imperativo`.
 Exemplos:
 
 ```
-eda: analisa distribuicao de Revenue por mes
-data(dvc): versiona dataset online shoppers
+eda: analisa taxa de pedido por dispositivo
+data(dvc): versiona dataset customer propensity
 exp(model): compara random forest e regressao logistica
 feat(registry): promove melhor modelo para champion
 ```
