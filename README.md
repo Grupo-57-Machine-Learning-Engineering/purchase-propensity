@@ -21,6 +21,13 @@ flags 0/1 como booleanos. O ETL não remove colunas: `checked_delivery_detail` e
 entram no modelo. O `testing_sample.csv` do Kaggle não é usado porque vem com `ordered`
 zerado.
 
+### EDA
+
+Achados e decisões para a modelagem em [`docs/eda-findings.md`](docs/eda-findings.md); a
+análise completa está em [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb). Em resumo:
+`sign_in`, `saw_checkout` e `checked_delivery_detail` são vazamento e ficam fora do modelo,
+e o carrinho é o melhor sinal de intenção de compra.
+
 ## Estrutura
 
 ```
