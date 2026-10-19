@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from mlflow.tracking import MlflowClient
 
-from src.config import LEAKAGE_COLUMNS
+from src.config import CV_FOLDS, LEAKAGE_COLUMNS
 from src.training.baseline import DEFAULT_RUN_NAME, build_baseline, build_params, run_baseline
 from src.training.split import stratified_split
 
@@ -60,8 +60,12 @@ def test_run_baseline_logs_run_with_metrics_and_tags(
     run = local_mlflow.get_run(run_id)
     assert run.info.run_name == DEFAULT_RUN_NAME
     assert 0.0 <= run.data.metrics["test_pr_auc"] <= 1.0
+    assert 0.0 <= run.data.metrics["cv_pr_auc_mean"] <= 1.0
+    assert run.data.metrics["fit_duration_seconds"] >= 0.0
+    assert run.data.metrics["cv_duration_seconds"] >= 0.0
     assert {"autor", "git_sha", "dataset_version"} <= set(run.data.tags)
     assert run.data.params["excluded_columns"] == ",".join(LEAKAGE_COLUMNS)
+    assert run.data.params["cv_folds"] == str(CV_FOLDS)
 
 
 def test_run_baseline_accepts_custom_run_name(

@@ -1,17 +1,20 @@
 """Baseline de regressão logística. Rode com `python -m src.training.baseline`.
 
 Lê o dataset processado, separa treino e teste, treina o baseline sem as colunas
-de vazamento e grava a run no MLflow. Paths e constantes vêm de `src/config.py`,
-e nada aqui depende do DVC: ele só precisa chamar este módulo.
+de vazamento, valida por cross-validation e grava a run no MLflow. Paths e
+constantes vêm de `src/config.py`, e nada aqui depende do DVC: ele só precisa
+chamar este módulo.
 """
 
 import argparse
+import time
 from pathlib import Path
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
 from src.config import (
+    CV_FOLDS,
     DECISION_THRESHOLD,
     LEAKAGE_COLUMNS,
     PROCESSED_DATA_FILE,
@@ -19,6 +22,7 @@ from src.config import (
     TEST_SIZE,
 )
 from src.logger import get_logger
+from src.training.cross_validation import cross_validate_model
 from src.training.split import SplitData, stratified_split
 from src.training.tracking import build_tags, log_run
 from src.training.train import fit_and_evaluate
@@ -51,6 +55,7 @@ def build_params(
         "n_features": data.features_train.shape[1],
         "n_train": len(data.features_train),
         "n_test": len(data.features_test),
+        "cv_folds": CV_FOLDS,
     }
 
 
@@ -59,16 +64,41 @@ def run_baseline(
     run_name: str = DEFAULT_RUN_NAME,
     threshold: float = DECISION_THRESHOLD,
 ) -> str:
-    """Treina o baseline, grava a run no MLflow e devolve o `run_id`."""
+    """Treina o baseline, valida por cross-validation e grava a run no MLflow.
+
+    Mede o tempo de treino e de cross-validation (`fit_duration_seconds`,
+    `cv_duration_seconds`, `total_duration_seconds`) para comparar modelos na
+    mesma tabela, do mesmo jeito que no TC1.
+    """
     data = stratified_split(pd.read_parquet(data_path))
     logger.info("Treinando baseline em %d linhas de treino", len(data.features_train))
+
+    fit_start = time.perf_counter()
     result = fit_and_evaluate(build_baseline(), data, threshold)
+    fit_duration = time.perf_counter() - fit_start
     logger.info("Métricas: %s", {name: round(v, 4) for name, v in result.metrics.items()})
+
+    cv_start = time.perf_counter()
+    cv_result = cross_validate_model(build_baseline(), data, folds=CV_FOLDS)
+    cv_duration = time.perf_counter() - cv_start
+    logger.info(
+        "Cross-validation (%d folds): %s",
+        CV_FOLDS,
+        {name: round(v, 4) for name, v in cv_result.metrics.items()},
+    )
+
+    metrics = {
+        **result.metrics,
+        **cv_result.metrics,
+        "fit_duration_seconds": fit_duration,
+        "cv_duration_seconds": cv_duration,
+        "total_duration_seconds": fit_duration + cv_duration,
+    }
     run_id = log_run(
         run_name=run_name,
         model=result.model,
         params=build_params(build_baseline(), data, threshold),
-        metrics=result.metrics,
+        metrics=metrics,
         tags=build_tags(data_path),
         input_example=data.features_train.head(5),
     )
