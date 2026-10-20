@@ -168,19 +168,19 @@ Se alguém furar a fila, reverta e reabra via PR da `develop`.
 
 Formato: `<tipo>(<escopo>): descrição no imperativo`.
 
-| Tipo         | Quando usar                                  |
-| ------------ | -------------------------------------------- |
-| `feat`     | nova funcionalidade                          |
+| Tipo       | Quando usar                               |
+| ---------- | ------------------------------------------ |
+| `feat`     | nova funcionalidade                        |
 | `fix`      | correção de bug                            |
 | `docs`     | documentação                               |
 | `refactor` | mudança de código sem mudar comportamento  |
-| `data`     | dados: DVC, ingestão, limpeza, preparação |
+| `data`     | dados: DVC, ingestão, limpeza, preparação  |
 | `eda`      | análise exploratória (notebooks, achados)  |
-| `exp`      | experimento de modelo (treino, tuning)       |
+| `exp`      | experimento de modelo (treino, tuning)     |
 | `test`     | adição ou ajuste de testes                 |
-| `ci`       | workflows do GitHub Actions                  |
-| `build`    | build, Makefile, Docker                      |
-| `chore`    | infra, config, dependências                 |
+| `ci`       | workflows do GitHub Actions                |
+| `build`    | build, Makefile, Docker                    |
+| `chore`    | infra, config, dependências                |
 
 Exemplos:
 

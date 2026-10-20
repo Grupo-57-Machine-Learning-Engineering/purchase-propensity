@@ -31,7 +31,12 @@ def cross_validate_model(
     folds: int = CV_FOLDS,
     seed: int = RANDOM_SEED,
 ) -> CrossValResult:
-    """Valida `model` por k-fold estratificado no conjunto de treino de `data`."""
+    """Valida `model` por k-fold estratificado no conjunto de treino de `data`.
+
+    `folds` não pode passar do número de exemplos da classe minoritária no
+    treino, senão o `StratifiedKFold` levanta erro (algum fold ficaria sem
+    nenhum positivo).
+    """
     splitter = StratifiedKFold(n_splits=folds, shuffle=True, random_state=seed)
     scores = cross_validate(
         clone(model),
