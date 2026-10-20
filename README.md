@@ -71,7 +71,7 @@ cp .env.example .env
 ## Comandos (Makefile)
 
 | Comando           | O que faz                                    |
-| ----------------- | -------------------------------------------- |
+| ----------------- | --------------------------------------------- |
 | `make setup`      | Instala dependências e hooks do git          |
 | `make install`    | Instala dependências a partir do lock        |
 | `make lint`       | `ruff check` + checagem de formatação        |
@@ -81,6 +81,47 @@ cp .env.example .env
 | `make eda`        | Reexecuta o notebook de EDA                  |
 | `make pre-commit` | Roda todos os hooks em todos os arquivos     |
 | `make help`       | Lista todos os alvos                         |
+
+## Treino e MLflow
+
+O baseline de Regressão Logística lê `data/processed/customer_propensity.parquet`
+(gerado por `make etl`) e grava a run no MLflow:
+
+```bash
+uv run python -m src.training.baseline
+uv run python -m src.training.baseline --run-name baseline-logreg-seed7
+```
+
+- **Split:** estratificado pelo alvo `ordered`, com seed fixo (`src/training/split.py`).
+- **Vazamento:** `sign_in`, `saw_checkout` e `checked_delivery_detail` ficam fora das
+  features por padrão (`LEAKAGE_COLUMNS` em `src/config.py`), conforme a EDA em
+  [`docs/eda-findings.md`](docs/eda-findings.md).
+- **Métricas:** PR-AUC como principal, mais ROC-AUC, precisão e recall no threshold
+  (`src/training/metrics.py`), registradas para treino (`train_*`) e teste (`test_*`).
+- **Cross-validation:** k-fold estratificado (`CV_FOLDS` em `src/config.py`) no conjunto
+  de treino, com PR-AUC e ROC-AUC médios e desvio padrão entre os folds (`cv_*_mean`,
+  `cv_*_std`), para uma estimativa mais estável que o holdout único
+  (`src/training/cross_validation.py`).
+- **Tempo:** duração do treino e da cross-validation (`fit_duration_seconds`,
+  `cv_duration_seconds`, `total_duration_seconds`), para comparar modelos na mesma
+  tabela.
+- **Reuso:** split, métricas, `fit_and_evaluate` e `cross_validate_model` não dependem do
+  modelo, então Random Forest e HistGB entram trocando só o estimador.
+- **Tracking:** experiment `purchase-propensity`, com as tags `autor`, `git_sha` e
+  `dataset_version` (hash do parquet). Nesta etapa nada vai para o Model Registry.
+
+A URI e as credenciais do MLflow vêm só do ambiente (`MLFLOW_TRACKING_URI`,
+`MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD`, que podem ficar no `.env`).
+Para rodar sem enviar nada ao servidor, sobrescreva a URI só naquele comando (variável
+já definida no shell tem prioridade sobre o `.env`):
+
+```bash
+MLFLOW_TRACKING_URI=sqlite:///mlflow.db uv run python -m src.training.baseline
+uv run mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+O `mlflow.db` e a pasta `mlruns/` ficam na raiz e não vão para o git. Sem
+`MLFLOW_TRACKING_URI` em lugar nenhum, o MLflow já usa `sqlite:///mlflow.db`.
 
 ## Fluxo de contribuição
 
@@ -128,18 +169,18 @@ Se alguém furar a fila, reverta e reabra via PR da `develop`.
 Formato: `<tipo>(<escopo>): descrição no imperativo`.
 
 | Tipo       | Quando usar                               |
-| ---------- | ----------------------------------------- |
-| `feat`     | nova funcionalidade                       |
-| `fix`      | correção de bug                           |
-| `docs`     | documentação                              |
-| `refactor` | mudança de código sem mudar comportamento |
-| `data`     | dados: DVC, ingestão, limpeza, preparação |
-| `eda`      | análise exploratória (notebooks, achados) |
-| `exp`      | experimento de modelo (treino, tuning)    |
-| `test`     | adição ou ajuste de testes                |
-| `ci`       | workflows do GitHub Actions               |
-| `build`    | build, Makefile, Docker                   |
-| `chore`    | infra, config, dependências               |
+| ---------- | ------------------------------------------ |
+| `feat`     | nova funcionalidade                        |
+| `fix`      | correção de bug                            |
+| `docs`     | documentação                               |
+| `refactor` | mudança de código sem mudar comportamento  |
+| `data`     | dados: DVC, ingestão, limpeza, preparação  |
+| `eda`      | análise exploratória (notebooks, achados)  |
+| `exp`      | experimento de modelo (treino, tuning)     |
+| `test`     | adição ou ajuste de testes                 |
+| `ci`       | workflows do GitHub Actions                |
+| `build`    | build, Makefile, Docker                    |
+| `chore`    | infra, config, dependências                |
 
 Exemplos:
 
