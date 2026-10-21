@@ -1,0 +1,58 @@
+schema: '2.0'
+stages:
+  etl:
+    cmd: uv run python -m src.data.pipeline
+    deps:
+    - path: data/raw/training_sample.csv
+      hash: md5
+      md5: 4a5b6022871e29508c1687eae75ecc30
+      size: 38658877
+    - path: src/config.py
+      hash: md5
+      md5: 7dd621204092cdd3525b5ded535d7651
+      size: 1804
+    - path: src/data/extract.py
+      hash: md5
+      md5: c140b840c6a77562bdbb8c6c7dbf8abf
+      size: 1452
+    - path: src/data/load.py
+      hash: md5
+      md5: 4c251d91c1ec946281a8f5a5ab545df3
+      size: 413
+    - path: src/data/pipeline.py
+      hash: md5
+      md5: 3cbdf46f0fb34225269093bea7e939f6
+      size: 750
+    - path: src/data/transform.py
+      hash: md5
+      md5: 2d9ed644890fccdc9c4f6c853a47f26b
+      size: 869
+    outs:
+    - path: data/processed/customer_propensity.parquet
+      hash: md5
+      md5: c745d42d5ed74c89960f695c48d4f62f
+      size: 14691327
+  train:
+    cmd: uv run python -m src.training.baseline
+    deps:
+    - path: data/processed/customer_propensity.parquet
+      hash: md5
+      md5: c745d42d5ed74c89960f695c48d4f62f
+      size: 14691327
+    - path: src/config.py
+      hash: md5
+      md5: 7dd621204092cdd3525b5ded535d7651
+      size: 1804
+    - path: src/training/baseline.py
+      hash: md5
+      md5: 2ad39158e38ecd9a435b6c3e4f567cd3
+      size: 2246
+    outs:
+    - path: models/baseline.pkl
+      hash: md5
+      md5: 294289681b3b1e9b5ed0bf5ddd744b75
+      size: 1711
+    - path: models/metrics.json
+      hash: md5
+      md5: 6239f0b4ea9d2477e77b9d021dbe15f1
+      size: 688

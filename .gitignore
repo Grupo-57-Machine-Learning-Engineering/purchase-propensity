@@ -3,8 +3,10 @@ data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!data/**/*.dvc
 models/*
 !models/.gitkeep
+!models/**/*.dvc
 mlruns/
 mlartifacts/
 mlflow.db
