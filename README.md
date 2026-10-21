@@ -70,6 +70,22 @@ sem ele, valem os padrões do `.env.example`. Para mudar algum valor:
 cp .env.example .env
 ```
 
+### Dados e DVC (DAGsHub)
+
+Os dados e artefatos de modelo são versionados via DVC e hospedados no DAGsHub.
+Para sincronizar os dados na sua máquina pela primeira vez:
+
+1. Gere seu token em [dagshub.com/user/settings/tokens](https://dagshub.com/user/settings/tokens)
+2. Configure suas credenciais locais (não vão para o git):
+   ```bash
+   uv run dvc remote modify origin --local user <SEU_USUARIO_DAGSHUB>
+   uv run dvc remote modify origin --local password <SEU_TOKEN_DAGSHUB>
+   ```
+3. Puxe os dados:
+   ```bash
+   uv run dvc pull
+   ```
+
 ## Comandos (Makefile)
 
 | Comando             | O que faz                                  |
@@ -81,6 +97,8 @@ cp .env.example .env
 | `make test`       | Roda os testes (pytest)                    |
 | `make etl`        | Baixa o dataset e gera `data/processed/` |
 | `make eda`        | Reexecuta o notebook de EDA                |
+| `make dvc`        | Reproduz o pipeline completo via DVC       |
+| `make dvc-dag`    | Exibe o grafo (DAG) de estágios do DVC     |
 | `make pre-commit` | Roda todos os hooks em todos os arquivos   |
 | `make help`       | Lista todos os alvos                       |
 
