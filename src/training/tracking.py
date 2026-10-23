@@ -21,6 +21,11 @@ from src.config import MLFLOW_EXPERIMENT_NAME, PROJECT_ROOT
 UNKNOWN = "unknown"
 HASH_CHUNK_BYTES = 1024 * 1024
 DATASET_VERSION_LENGTH = 12
+# Armazenamento interno de árvore do scikit-learn: usado por Random Forest, HistGB
+# etc. O skops recusa esse tipo por padrão (não valida os índices dos nós), mas o
+# modelo vem do nosso próprio treino, nunca de um arquivo externo, então confiar
+# nele aqui é seguro.
+SKOPS_TRUSTED_TYPES = ["sklearn.tree._tree.Tree"]
 
 
 def _git_output(*args: str) -> str:
@@ -74,11 +79,22 @@ def log_run(
     tags: dict[str, str],
     input_example: pd.DataFrame,
 ) -> str:
-    """Grava uma run no experimento do projeto e devolve o `run_id`."""
+    """Grava uma run no experimento do projeto e devolve o `run_id`.
+
+    O `model_id` do `LoggedModel` (MLflow 3.x) não é devolvido aqui porque não é
+    usado para registrar a run no Registry: `promote_best_model`
+    (`src/training/registry.py`) busca o `model_id` certo pelo `run_id`, depois de
+    decidir qual run é a melhor.
+    """
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name=run_name) as run:
         mlflow.set_tags(tags)
         mlflow.log_params(params)
         mlflow.log_metrics(metrics)
-        mlflow.sklearn.log_model(model, name="model", input_example=input_example)
+        mlflow.sklearn.log_model(
+            model,
+            name="model",
+            input_example=input_example,
+            skops_trusted_types=SKOPS_TRUSTED_TYPES,
+        )
     return run.info.run_id
