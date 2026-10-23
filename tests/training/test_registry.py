@@ -41,6 +41,15 @@ def test_promote_best_model_without_runs_raises(local_mlflow: MlflowClient) -> N
         promote_best_model(name="modelo-teste-vazio")
 
 
+def test_promote_best_model_without_logged_model_raises(local_mlflow: MlflowClient) -> None:
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    with mlflow.start_run(run_name="sem-modelo"):
+        mlflow.log_metric("cv_pr_auc_mean", 0.5)
+
+    with pytest.raises(ValueError, match="não tem modelo logado"):
+        promote_best_model(name="modelo-teste-sem-modelo")
+
+
 def test_promote_best_model_champion_is_loadable(local_mlflow: MlflowClient) -> None:
     _log_run_with_model(local_mlflow, "unico", cv_pr_auc_mean=0.5)
 
