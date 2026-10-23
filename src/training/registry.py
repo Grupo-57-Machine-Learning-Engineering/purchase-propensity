@@ -27,9 +27,13 @@ CHAMPION_ALIAS = "champion"
 logger = get_logger(__name__)
 
 
-def _best_model_id(run: Run) -> str:
-    """`model_id` do modelo logado em `run`; levanta erro se não houver nenhum."""
-    model_outputs = run.outputs.model_outputs if run.outputs else None
+def _best_model_id(client: MlflowClient, run: Run) -> str:
+    """`model_id` do modelo logado em `run`; levanta erro se não houver nenhum.
+
+    `search_runs` (usado por `rank_runs`) não traz `outputs`; só `get_run` traz.
+    """
+    full_run = client.get_run(run.info.run_id)
+    model_outputs = full_run.outputs.model_outputs if full_run.outputs else None
     if not model_outputs:
         raise ValueError(f"Run {run.info.run_id} não tem modelo logado para promover.")
     return model_outputs[0].model_id
@@ -43,7 +47,7 @@ def promote_best_model(name: str = MLFLOW_REGISTERED_MODEL_NAME) -> str:
         raise ValueError("Nenhum run encontrado no experimento para promover.")
     best_run = runs[0]
 
-    model_id = _best_model_id(best_run)
+    model_id = _best_model_id(client, best_run)
     result = mlflow.register_model(f"models:/{model_id}", name)
     client.set_registered_model_alias(name, CHAMPION_ALIAS, result.version)
     logger.info(
