@@ -61,3 +61,4 @@ CV_FOLDS: int = 5
 # URI e credenciais vêm só das variáveis de ambiente (MLFLOW_TRACKING_URI,
 # MLFLOW_TRACKING_USERNAME e MLFLOW_TRACKING_PASSWORD), que o próprio MLflow lê.
 MLFLOW_EXPERIMENT_NAME: str = "purchase-propensity"
+MLFLOW_REGISTERED_MODEL_NAME: str = "purchase-propensity"
