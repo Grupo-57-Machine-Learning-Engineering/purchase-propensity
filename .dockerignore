@@ -1,0 +1,46 @@
+# Contexto de build enxuto e sem segredos. Padrões do .dockerignore são relativos
+# à raiz do contexto, então o que existe em qualquer nível precisa de `**/`.
+
+# Segredos (o .env tem credenciais do MLflow; passe-as com --env-file no run)
+.env
+.env.*
+
+# Git e CI
+.git
+.github
+.gitattributes
+.pre-commit-config.yaml
+
+# Ambientes e caches (o venv é recriado dentro da imagem pelo uv)
+.venv
+venv
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.ipynb_checkpoints
+**/__pycache__
+**/*.py[cod]
+
+# DVC: o .dvc/cache guarda cópias do dataset (centenas de MB) e a imagem não usa DVC
+.dvc
+.dvcignore
+dvc.yaml
+dvc.lock
+
+# Dados e artefatos: entram por volume, nunca pela imagem
+data/raw/*
+data/processed/*
+models/*
+mlruns
+mlartifacts
+mlflow.db
+
+# Não usados em runtime
+notebooks
+tests
+docs
+scripts
+**/*.md
+Makefile
+Dockerfile
+.dockerignore
