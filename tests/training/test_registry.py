@@ -6,7 +6,7 @@ import pytest
 from mlflow.tracking import MlflowClient
 from sklearn.linear_model import LogisticRegression
 
-from src.config import MLFLOW_EXPERIMENT_NAME
+from src.config import LEAKAGE_COLUMNS, MLFLOW_EXPERIMENT_NAME
 from src.training.registry import CHAMPION_ALIAS, promote_best_model
 
 
@@ -15,6 +15,7 @@ def _log_run_with_model(client: MlflowClient, run_name: str, cv_pr_auc_mean: flo
     model = LogisticRegression().fit([[0], [1]], [0, 1])
     with mlflow.start_run(run_name=run_name) as run:
         mlflow.log_param("model", type(model).__name__)
+        mlflow.log_param("excluded_columns", ",".join(LEAKAGE_COLUMNS))
         mlflow.log_metric("cv_pr_auc_mean", cv_pr_auc_mean)
         mlflow.sklearn.log_model(model, name="model")
     return run.info.run_id
@@ -44,6 +45,7 @@ def test_promote_best_model_without_runs_raises(local_mlflow: MlflowClient) -> N
 def test_promote_best_model_without_logged_model_raises(local_mlflow: MlflowClient) -> None:
     mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
     with mlflow.start_run(run_name="sem-modelo"):
+        mlflow.log_param("excluded_columns", ",".join(LEAKAGE_COLUMNS))
         mlflow.log_metric("cv_pr_auc_mean", 0.5)
 
     with pytest.raises(ValueError, match="não tem modelo logado"):
