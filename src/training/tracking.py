@@ -3,7 +3,8 @@
 A URI do servidor e as credenciais não aparecem no código: o MLflow lê
 `MLFLOW_TRACKING_URI`, `MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD` do
 ambiente (o `src.config` carrega o `.env` local). Sem URI, grava em `./mlruns`.
-Esta etapa não registra modelo no Registry.
+Esta etapa só loga a run; quem registra no Model Registry é
+`src/training/registry.py`, a partir do `model_id` do `LoggedModel` criado aqui.
 """
 
 import getpass
