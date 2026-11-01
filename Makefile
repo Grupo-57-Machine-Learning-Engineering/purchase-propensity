@@ -1,4 +1,4 @@
-.PHONY: help setup install lint format test etl eda dvc dvc-dag pre-commit clean
+.PHONY: help setup install lint format test etl eda dvc dvc-metrics dvc-dag pre-commit clean
 
 help: ## Lista os alvos disponíveis
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -31,8 +31,11 @@ eda: ## Reexecuta o notebook de EDA (precisa do make etl antes)
 	uv run jupyter nbconvert --to notebook --execute --inplace \
 		--ExecutePreprocessor.record_timing=False notebooks/01_eda.ipynb
 
-dvc: ## Reproduz o pipeline completo via DVC (etl → train)
+dvc: ## Reproduz o pipeline via DVC (ETL e treino dos dois modelos)
 	uv run dvc repro
+
+dvc-metrics: ## Mostra as métricas dos modelos registradas pelo DVC
+	uv run dvc metrics show
 
 dvc-dag: ## Mostra o grafo de dependências do pipeline
 	uv run dvc dag
