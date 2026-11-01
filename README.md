@@ -47,6 +47,8 @@ purchase-propensity/
 ├── docs/             # documentação do projeto
 ├── .github/          # CI e template de PR
 ├── .env.example      # modelo do .env (configurações)
+├── Dockerfile        # imagem do pipeline (uv, usuário sem privilégios)
+├── .dockerignore     # contexto de build sem .env, dados nem venv
 ├── pyproject.toml    # dependências (uv)
 └── Makefile
 ```
@@ -148,6 +150,37 @@ uv run mlflow ui --backend-store-uri sqlite:///mlflow.db
 
 O `mlflow.db` e a pasta `mlruns/` ficam na raiz e não vão para o git. Sem
 `MLFLOW_TRACKING_URI` em lugar nenhum, o MLflow já usa `sqlite:///mlflow.db`.
+
+## Docker
+
+A imagem instala só as dependências de produção (`uv sync --locked --no-dev`), roda como
+usuário sem privilégios e executa o ETL por padrão. O `.env` nunca entra na imagem
+(`.dockerignore`).
+
+```bash
+docker build -t purchase-propensity .
+
+# ETL: baixa o dataset e grava data/processed/customer_propensity.parquet no host
+docker run --rm -v "$(pwd)/data:/app/data" purchase-propensity
+
+# ETL + treino do baseline, tudo dentro do container
+docker run --rm purchase-propensity sh -c \
+  "python -m src.data.pipeline && python -m src.training.baseline"
+```
+
+No PowerShell, troque `$(pwd)` por `${PWD}`. O build usa BuildKit (padrão no Docker
+Desktop; em Docker antigo no Linux, `DOCKER_BUILDKIT=1`).
+
+- **Dados:** sem `-v`, o que o container gera some quando ele termina. Com
+  `-v "$(pwd)/data:/app/data"`, `data/raw` e `data/processed` ficam no host e o
+  download do Kaggle não se repete.
+- **MLflow:** sem `MLFLOW_TRACKING_URI`, a run vai para um `mlflow.db` dentro do
+  container (some ao sair). Para enviar ao servidor, passe o `.env`:
+  `docker run --rm --env-file .env purchase-propensity python -m src.training.baseline`.
+- **Tags da run:** dentro do container não há git, então `git_sha` fica `unknown` e
+  `autor` vem de `USER` (padrão `app`; sobrescreva com `-e USER=seu-nome`).
+- **Linux com `--user`:** se o bind mount der permissão negada, rode com
+  `--user "$(id -u):$(id -g)"`.
 
 ## Fluxo de contribuição
 
