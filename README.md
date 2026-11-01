@@ -45,10 +45,12 @@ purchase-propensity/
 ├── configs/          # configurações e hiperparâmetros
 ├── notebooks/        # EDA e exploração (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
 ├── docs/             # documentação do projeto
+├── reports/          # métricas geradas pelo pipeline DVC
 ├── .github/          # CI e template de PR
 ├── .env.example      # modelo do .env (configurações)
 ├── Dockerfile        # imagem do pipeline (uv, usuário sem privilégios)
 ├── .dockerignore     # contexto de build sem .env, dados nem venv
+├── dvc.yaml          # pipeline DVC (ETL e treino)
 ├── pyproject.toml    # dependências (uv)
 └── Makefile
 ```
@@ -72,35 +74,51 @@ cp .env.example .env
 
 ### Dados e DVC (DAGsHub)
 
-Os dados e artefatos de modelo são versionados via DVC e hospedados no DAGsHub.
-Para sincronizar os dados na sua máquina pela primeira vez:
+O dataset bruto (`data/raw/training_sample.csv`) é versionado com DVC e fica no remote do
+DAGsHub. Há dois jeitos de ter os dados na máquina:
 
-1. Gere seu token em [dagshub.com/user/settings/tokens](https://dagshub.com/user/settings/tokens)
-2. Configure suas credenciais locais (não vão para o git):
-   ```bash
-   uv run dvc remote modify origin --local user <SEU_USUARIO_DAGSHUB>
-   uv run dvc remote modify origin --local password <SEU_TOKEN_DAGSHUB>
-   ```
-3. Puxe os dados:
-   ```bash
-   uv run dvc pull
-   ```
+- `make etl`: baixa do Kaggle (sem token) e gera o parquet. Basta para trabalhar.
+- `dvc pull`: baixa a versão exata registrada no DVC. Precisa de credencial do DAGsHub,
+  configurada só na sua máquina (`--local` não vai para o git):
+
+  ```bash
+  uv run dvc remote modify origin --local user <SEU_USUARIO_DAGSHUB>
+  uv run dvc remote modify origin --local password <SEU_TOKEN_DAGSHUB>
+  uv run dvc pull
+  ```
+
+  O token sai de [dagshub.com/user/settings/tokens](https://dagshub.com/user/settings/tokens).
+
+O pipeline está em `dvc.yaml`: `etl` gera o parquet, e `train_baseline` e
+`train_random_forest` treinam os dois modelos, logam no MLflow e gravam as métricas em
+`reports/metrics/`. O DVC só reexecuta o estágio cujas dependências mudaram:
+
+```bash
+make dvc            # dvc repro: roda o que estiver desatualizado
+make dvc-metrics    # dvc metrics show: métricas dos dois modelos lado a lado
+make dvc-dag        # grafo dos estágios
+```
+
+As métricas em `reports/metrics/` vão para o git, então `uv run dvc metrics diff` compara
+o commit atual com o anterior. Quem altera o dataset roda `uv run dvc push` (precisa de
+permissão de escrita no repositório do DAGsHub).
 
 ## Comandos (Makefile)
 
-| Comando             | O que faz                                  |
-| ------------------- | ------------------------------------------ |
-| `make setup`      | Instala dependências e hooks do git       |
-| `make install`    | Instala dependências a partir do lock     |
-| `make lint`       | `ruff check` + checagem de formatação  |
-| `make format`     | Formata e auto-corrige com ruff            |
-| `make test`       | Roda os testes (pytest)                    |
-| `make etl`        | Baixa o dataset e gera `data/processed/` |
-| `make eda`        | Reexecuta o notebook de EDA                |
-| `make dvc`        | Reproduz o pipeline completo via DVC       |
-| `make dvc-dag`    | Exibe o grafo (DAG) de estágios do DVC     |
-| `make pre-commit` | Roda todos os hooks em todos os arquivos   |
-| `make help`       | Lista todos os alvos                       |
+| Comando            | O que faz                                  |
+| ------------------ | ------------------------------------------ |
+| `make setup`       | Instala dependências e hooks do git        |
+| `make install`     | Instala dependências a partir do lock      |
+| `make lint`        | `ruff check` + checagem de formatação      |
+| `make format`      | Formata e auto-corrige com ruff            |
+| `make test`        | Roda os testes (pytest)                    |
+| `make etl`         | Baixa o dataset e gera `data/processed/`   |
+| `make eda`         | Reexecuta o notebook de EDA                |
+| `make dvc`         | Reproduz o pipeline via DVC (ETL e treino) |
+| `make dvc-metrics` | Mostra as métricas dos modelos (DVC)       |
+| `make dvc-dag`     | Exibe o grafo (DAG) de estágios do DVC     |
+| `make pre-commit`  | Roda todos os hooks em todos os arquivos   |
+| `make help`        | Lista todos os alvos                       |
 
 ## Treino e MLflow
 
