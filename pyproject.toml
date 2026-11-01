@@ -23,6 +23,7 @@ dev = [
     "nbconvert>=7.16",
     "matplotlib>=3.9",
     "seaborn>=0.13",
+    "dvc>=3.50",
 ]
 
 [tool.uv]
