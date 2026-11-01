@@ -121,10 +121,12 @@ uv run python -m src.training.registry   # promove o melhor run a champion
 ```
 
 - **Comparação:** `src/training/compare.py` ordena por `cv_pr_auc_mean` (mais estável
-  que o holdout único) só as runs com `status = FINISHED` do experimento, e imprime uma
-  tabela com modelo, métricas de CV/teste e tempo total. Uma run que cai entre logar a
-  métrica e logar o modelo fica `FAILED`; sem esse filtro ela poderia liderar o ranking
-  sem ter modelo nenhum para promover.
+  que o holdout único) só as runs elegíveis do experimento, e imprime uma tabela com
+  modelo, métricas de CV/teste e tempo total. Elegível é a run `FINISHED` treinada sem as
+  colunas de vazamento (`params.excluded_columns` igual a `LEAKAGE_COLUMNS`). Uma run que
+  cai entre logar a métrica e logar o modelo fica `FAILED` e não teria modelo para
+  promover; uma run com vazamento (de referência, ou anterior à exclusão) teria PR-AUC
+  artificialmente alta e viraria `champion`.
 - **Registry:** `src/training/registry.py` registra o run do topo dessa comparação no
   MLflow Model Registry e aponta o alias `champion` pra ele (aliases, não mais
   "stages", que o MLflow 2.9+/3.x descontinuou).
@@ -137,6 +139,13 @@ uv run python -m src.training.registry   # promove o melhor run a champion
   `skops_trusted_types=["sklearn.tree._tree.Tree"]` no `log_model` (`src/training/tracking.py`):
   o skops recusa esse tipo por padrão, mas o modelo vem do nosso próprio treino, nunca
   de um arquivo externo.
+
+Resultado atual: regressão logística com `cv_pr_auc_mean` de 0,3761 (desvio 0,0037) e
+Random Forest com 0,3723 (desvio 0,0061). A diferença fica dentro do desvio padrão da
+cross-validation, então os dois empatam, e no holdout também (`test_pr_auc` de 0,3715
+contra 0,3716). O Random Forest padrão ainda tem overfitting (PR-AUC de 0,50 no treino
+contra 0,37 no teste): a regressão logística lidera por falta de tuning do Random
+Forest, não por ser melhor.
 
 A URI e as credenciais do MLflow vêm só do ambiente (`MLFLOW_TRACKING_URI`,
 `MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD`, que podem ficar no `.env`).
