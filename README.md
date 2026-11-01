@@ -70,17 +70,17 @@ cp .env.example .env
 
 ## Comandos (Makefile)
 
-| Comando           | O que faz                                    |
-| ----------------- | --------------------------------------------- |
-| `make setup`      | Instala dependências e hooks do git          |
-| `make install`    | Instala dependências a partir do lock        |
-| `make lint`       | `ruff check` + checagem de formatação        |
-| `make format`     | Formata e auto-corrige com ruff              |
-| `make test`       | Roda os testes (pytest)                      |
-| `make etl`        | Baixa o dataset e gera `data/processed/`     |
-| `make eda`        | Reexecuta o notebook de EDA                  |
-| `make pre-commit` | Roda todos os hooks em todos os arquivos     |
-| `make help`       | Lista todos os alvos                         |
+| Comando             | O que faz                                  |
+| ------------------- | ------------------------------------------ |
+| `make setup`      | Instala dependências e hooks do git       |
+| `make install`    | Instala dependências a partir do lock     |
+| `make lint`       | `ruff check` + checagem de formatação  |
+| `make format`     | Formata e auto-corrige com ruff            |
+| `make test`       | Roda os testes (pytest)                    |
+| `make etl`        | Baixa o dataset e gera `data/processed/` |
+| `make eda`        | Reexecuta o notebook de EDA                |
+| `make pre-commit` | Roda todos os hooks em todos os arquivos   |
+| `make help`       | Lista todos os alvos                       |
 
 ## Treino e MLflow
 
@@ -118,9 +118,11 @@ uv run python -m src.training.compare    # tabela comparativa dos runs
 uv run python -m src.training.registry   # promove o melhor run a champion
 ```
 
-- **Comparação:** `src/training/compare.py` ordena os runs do experimento por
-  `cv_pr_auc_mean` (mais estável que o holdout único) e imprime uma tabela com modelo,
-  métricas de CV/teste e tempo total.
+- **Comparação:** `src/training/compare.py` ordena por `cv_pr_auc_mean` (mais estável
+  que o holdout único) só as runs com `status = FINISHED` do experimento, e imprime uma
+  tabela com modelo, métricas de CV/teste e tempo total. Uma run que cai entre logar a
+  métrica e logar o modelo fica `FAILED`; sem esse filtro ela poderia liderar o ranking
+  sem ter modelo nenhum para promover.
 - **Registry:** `src/training/registry.py` registra o run do topo dessa comparação no
   MLflow Model Registry e aponta o alias `champion` pra ele (aliases, não mais
   "stages", que o MLflow 2.9+/3.x descontinuou).
@@ -192,19 +194,19 @@ Se alguém furar a fila, reverta e reabra via PR da `develop`.
 
 Formato: `<tipo>(<escopo>): descrição no imperativo`.
 
-| Tipo       | Quando usar                               |
-| ---------- | ------------------------------------------ |
-| `feat`     | nova funcionalidade                        |
+| Tipo         | Quando usar                                  |
+| ------------ | -------------------------------------------- |
+| `feat`     | nova funcionalidade                          |
 | `fix`      | correção de bug                            |
 | `docs`     | documentação                               |
 | `refactor` | mudança de código sem mudar comportamento  |
-| `data`     | dados: DVC, ingestão, limpeza, preparação  |
+| `data`     | dados: DVC, ingestão, limpeza, preparação |
 | `eda`      | análise exploratória (notebooks, achados)  |
-| `exp`      | experimento de modelo (treino, tuning)     |
+| `exp`      | experimento de modelo (treino, tuning)       |
 | `test`     | adição ou ajuste de testes                 |
-| `ci`       | workflows do GitHub Actions                |
-| `build`    | build, Makefile, Docker                    |
-| `chore`    | infra, config, dependências                |
+| `ci`       | workflows do GitHub Actions                  |
+| `build`    | build, Makefile, Docker                      |
+| `chore`    | infra, config, dependências                 |
 
 Exemplos:
 

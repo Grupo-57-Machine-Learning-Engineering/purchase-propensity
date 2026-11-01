@@ -28,6 +28,20 @@ def test_rank_runs_returns_empty_without_the_experiment(local_mlflow: MlflowClie
     assert rank_runs(local_mlflow) == []
 
 
+def test_rank_runs_skips_failed_runs_even_with_the_best_metric(
+    local_mlflow: MlflowClient,
+) -> None:
+    mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+    with mlflow.start_run(run_name="caiu-antes-do-log-model") as failed_run:
+        mlflow.log_metric("cv_pr_auc_mean", 0.9)
+    local_mlflow.set_terminated(failed_run.info.run_id, status="FAILED")
+    _log_run(local_mlflow, "concluida", "LogisticRegression", 0.5)
+
+    runs = rank_runs(local_mlflow)
+
+    assert [run.info.run_name for run in runs] == ["concluida"]
+
+
 def test_format_table_lists_model_and_metrics_per_run(local_mlflow: MlflowClient) -> None:
     _log_run(local_mlflow, "melhor", "RandomForestClassifier", 0.7)
 

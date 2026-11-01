@@ -21,13 +21,19 @@ TABLE_METRICS: tuple[str, ...] = (
 
 
 def rank_runs(client: MlflowClient | None = None) -> list[Run]:
-    """Runs do experimento do projeto, da maior para a menor `cv_pr_auc_mean`."""
+    """Runs concluídas do experimento, da maior para a menor `cv_pr_auc_mean`.
+
+    Só runs com `status = FINISHED`: uma run que cai entre logar a métrica e
+    logar o modelo (`FAILED`) pode ficar no topo do ranking sem ter modelo
+    nenhum para promover.
+    """
     client = client or MlflowClient()
     experiment = client.get_experiment_by_name(MLFLOW_EXPERIMENT_NAME)
     if experiment is None:
         return []
     return client.search_runs(
         [experiment.experiment_id],
+        filter_string="attributes.status = 'FINISHED'",
         order_by=[f"metrics.{RANKING_METRIC} DESC"],
     )
 
