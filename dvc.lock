@@ -9,50 +9,71 @@ stages:
       size: 38658877
     - path: src/config.py
       hash: md5
-      md5: 7dd621204092cdd3525b5ded535d7651
-      size: 1804
-    - path: src/data/extract.py
+      md5: 5975eed7ad582a56516f5e6d120fa9e0
+      size: 2805
+    - path: src/data
       hash: md5
-      md5: c140b840c6a77562bdbb8c6c7dbf8abf
-      size: 1452
-    - path: src/data/load.py
+      md5: e2d67e824d7cda8d3aa71e86c4c0db4e.dir
+      size: 3448
+      nfiles: 5
+    - path: src/logger.py
       hash: md5
-      md5: 4c251d91c1ec946281a8f5a5ab545df3
-      size: 413
-    - path: src/data/pipeline.py
-      hash: md5
-      md5: 3cbdf46f0fb34225269093bea7e939f6
-      size: 750
-    - path: src/data/transform.py
-      hash: md5
-      md5: 2d9ed644890fccdc9c4f6c853a47f26b
-      size: 869
+      md5: a1d924b144c16da97126f9acfa968b2f
+      size: 758
     outs:
     - path: data/processed/customer_propensity.parquet
       hash: md5
-      md5: c745d42d5ed74c89960f695c48d4f62f
+      md5: a3b82ac14bab3767d9cd25f125d9c939
       size: 14691327
-  train:
-    cmd: uv run python -m src.training.baseline
+  train_baseline:
+    cmd: uv run python -m src.training.baseline --metrics-out
+      reports/metrics/baseline.json
     deps:
     - path: data/processed/customer_propensity.parquet
       hash: md5
-      md5: c745d42d5ed74c89960f695c48d4f62f
+      md5: a3b82ac14bab3767d9cd25f125d9c939
       size: 14691327
     - path: src/config.py
       hash: md5
-      md5: 7dd621204092cdd3525b5ded535d7651
-      size: 1804
-    - path: src/training/baseline.py
+      md5: 5975eed7ad582a56516f5e6d120fa9e0
+      size: 2805
+    - path: src/logger.py
       hash: md5
-      md5: 2ad39158e38ecd9a435b6c3e4f567cd3
-      size: 2246
+      md5: a1d924b144c16da97126f9acfa968b2f
+      size: 758
+    - path: src/training
+      hash: md5
+      md5: 14b166d9f901d3478526a21f2a0a1a9d.dir
+      size: 24806
+      nfiles: 10
     outs:
-    - path: models/baseline.pkl
+    - path: reports/metrics/baseline.json
       hash: md5
-      md5: 294289681b3b1e9b5ed0bf5ddd744b75
-      size: 1711
-    - path: models/metrics.json
+      md5: 6a2e23f510174c294f2bf91d0e83fdb2
+      size: 494
+  train_random_forest:
+    cmd: uv run python -m src.training.random_forest --metrics-out
+      reports/metrics/random_forest.json
+    deps:
+    - path: data/processed/customer_propensity.parquet
       hash: md5
-      md5: 6239f0b4ea9d2477e77b9d021dbe15f1
-      size: 688
+      md5: a3b82ac14bab3767d9cd25f125d9c939
+      size: 14691327
+    - path: src/config.py
+      hash: md5
+      md5: 5975eed7ad582a56516f5e6d120fa9e0
+      size: 2805
+    - path: src/logger.py
+      hash: md5
+      md5: a1d924b144c16da97126f9acfa968b2f
+      size: 758
+    - path: src/training
+      hash: md5
+      md5: 14b166d9f901d3478526a21f2a0a1a9d.dir
+      size: 24806
+      nfiles: 10
+    outs:
+    - path: reports/metrics/random_forest.json
+      hash: md5
+      md5: 124b9aed40f65b2658c66bfeeac4a0dc
+      size: 491

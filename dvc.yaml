@@ -1,28 +1,40 @@
-# Pipeline DVC – reproduzível com `dvc repro`.
-# Cada estágio declara dependências (deps) e saídas (outs) para que o DVC
-# saiba o que reexecutar quando algo mudar.
+# Pipeline reproduzível: `make dvc` (ou `uv run dvc repro`).
+# Cada estágio declara o que lê (deps) e o que gera (outs/metrics); o DVC só
+# reexecuta o estágio cujas dependências mudaram.
+#
+# O dataset bruto (data/raw/training_sample.csv) é versionado à parte, com
+# `dvc add`, e fica no remote do DAGsHub.
 
 stages:
   etl:
     cmd: uv run python -m src.data.pipeline
     deps:
-      - src/data/pipeline.py
-      - src/data/extract.py
-      - src/data/transform.py
-      - src/data/load.py
-      - src/config.py
       - data/raw/training_sample.csv
+      - src/data
+      - src/config.py
+      - src/logger.py
     outs:
       - data/processed/customer_propensity.parquet
 
-  train:
-    cmd: uv run python -m src.training.baseline
+  train_baseline:
+    cmd: uv run python -m src.training.baseline --metrics-out reports/metrics/baseline.json
     deps:
-      - src/training/baseline.py
-      - src/config.py
       - data/processed/customer_propensity.parquet
-    outs:
-      - models/baseline.pkl
+      - src/training
+      - src/config.py
+      - src/logger.py
     metrics:
-      - models/metrics.json:
+      # Sem cache: o JSON vai para o git, e `dvc metrics diff` compara versões.
+      - reports/metrics/baseline.json:
+          cache: false
+
+  train_random_forest:
+    cmd: uv run python -m src.training.random_forest --metrics-out reports/metrics/random_forest.json
+    deps:
+      - data/processed/customer_propensity.parquet
+      - src/training
+      - src/config.py
+      - src/logger.py
+    metrics:
+      - reports/metrics/random_forest.json:
           cache: false
