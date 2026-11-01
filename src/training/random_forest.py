@@ -23,6 +23,7 @@ from src.config import (
 )
 from src.logger import get_logger
 from src.training.cross_validation import cross_validate_model
+from src.training.metrics import save_metrics
 from src.training.split import SplitData, stratified_split
 from src.training.tracking import build_tags, log_run
 from src.training.train import fit_and_evaluate
@@ -63,6 +64,7 @@ def run_random_forest(
     data_path: Path = PROCESSED_DATA_FILE,
     run_name: str = DEFAULT_RUN_NAME,
     threshold: float = DECISION_THRESHOLD,
+    metrics_path: Path | None = None,
 ) -> str:
     """Treina o Random Forest, valida por cross-validation e grava a run no MLflow."""
     data = stratified_split(pd.read_parquet(data_path))
@@ -81,6 +83,10 @@ def run_random_forest(
         CV_FOLDS,
         {name: round(v, 4) for name, v in cv_result.metrics.items()},
     )
+
+    if metrics_path is not None:
+        # Só métricas de qualidade: os tempos mudam a cada execução e poluiriam o diff.
+        save_metrics({**result.metrics, **cv_result.metrics}, metrics_path)
 
     metrics = {
         **result.metrics,
@@ -106,8 +112,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Treina o random forest e loga no MLflow.")
     parser.add_argument("--run-name", default=DEFAULT_RUN_NAME, help="Nome da run no MLflow.")
     parser.add_argument("--data-path", type=Path, default=PROCESSED_DATA_FILE)
+    parser.add_argument(
+        "--metrics-out", type=Path, help="JSON com as métricas de qualidade (para o DVC)."
+    )
     args = parser.parse_args()
-    run_random_forest(data_path=args.data_path, run_name=args.run_name)
+    run_random_forest(
+        data_path=args.data_path, run_name=args.run_name, metrics_path=args.metrics_out
+    )
 
 
 if __name__ == "__main__":

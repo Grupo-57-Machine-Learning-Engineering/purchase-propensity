@@ -1,5 +1,6 @@
 """Testes do baseline de regressão logística, de ponta a ponta com dados sintéticos."""
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -74,3 +75,16 @@ def test_run_baseline_accepts_custom_run_name(
     run_id = run_baseline(data_path=processed_file, run_name="baseline-teste")
 
     assert local_mlflow.get_run(run_id).info.run_name == "baseline-teste"
+
+
+def test_run_baseline_writes_quality_metrics_for_dvc(
+    processed_file: Path, local_mlflow: MlflowClient, tmp_path: Path
+) -> None:
+    metrics_path = tmp_path / "metrics.json"
+
+    run_baseline(data_path=processed_file, metrics_path=metrics_path)
+
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert 0.0 <= metrics["cv_pr_auc_mean"] <= 1.0
+    assert "test_pr_auc" in metrics
+    assert not any(name.endswith("_seconds") for name in metrics)
