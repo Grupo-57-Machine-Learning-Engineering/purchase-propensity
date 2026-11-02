@@ -1,12 +1,11 @@
 # --- Dados e artefatos (versionados pelo DVC, não pelo git) -----------------
-data/raw/*
+# data/raw não entra aqui: o `dvc add` cria data/raw/.gitignore para cada arquivo
+# rastreado. Ignorar a pasta toda faz o DVC pular o .dvc dela, e o `dvc pull`
+# deixa de baixar o dataset.
 data/processed/*
-!data/raw/.gitkeep
 !data/processed/.gitkeep
-!data/**/*.dvc
 models/*
 !models/.gitkeep
-!models/**/*.dvc
 mlruns/
 mlartifacts/
 mlflow.db
