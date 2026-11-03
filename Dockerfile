@@ -1,7 +1,7 @@
-# Imagem do pipeline do purchase-propensity (ETL e treino).
+# Imagem do pipeline do purchase-propensity: ETL, treino e promoção no Model Registry.
 #
 # Build:  docker build -t purchase-propensity .
-# Run:    docker run --rm -v "$(pwd)/data:/app/data" purchase-propensity
+# Run:    docker run --rm --env-file .env -v "$(pwd)/data:/app/data" purchase-propensity
 FROM python:3.11-slim-bookworm
 
 # uv fixado na mesma versão usada no CI (.github/workflows/ci.yml).
@@ -36,6 +36,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     uv sync --locked --no-dev
 
+COPY configs ./configs
 COPY src ./src
 
 # O app escreve em /app (mlflow.db, mlruns/), data/ e models/. O chown em /app
@@ -46,6 +47,6 @@ RUN mkdir -p data/raw data/processed models \
 
 USER app
 
-# Padrão: ETL (baixa o dataset do Kaggle e gera data/processed/*.parquet).
-# Para treinar: docker run ... purchase-propensity python -m src.training.baseline
-CMD ["python", "-m", "src.data.pipeline"]
+# Padrão: pipeline de ponta a ponta (src/pipeline.py), na ordem do dvc.yaml.
+# Uma etapa só: docker run ... purchase-propensity python -m src.data.pipeline
+CMD ["python", "-m", "src.pipeline"]
