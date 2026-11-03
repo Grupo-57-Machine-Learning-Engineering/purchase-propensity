@@ -9,9 +9,13 @@ melhor, então é o critério de ordenação aqui — e também o que
 from mlflow.entities import Run
 from mlflow.tracking import MlflowClient
 
-from src.config import MLFLOW_EXPERIMENT_NAME
+from src.config import LEAKAGE_COLUMNS, MLFLOW_EXPERIMENT_NAME
 
 RANKING_METRIC = "cv_pr_auc_mean"
+# Só entram no ranking runs concluídas e treinadas sem as colunas de vazamento.
+RANKING_FILTER = (
+    f"attributes.status = 'FINISHED' and params.excluded_columns = '{','.join(LEAKAGE_COLUMNS)}'"
+)
 TABLE_METRICS: tuple[str, ...] = (
     "cv_pr_auc_mean",
     "cv_pr_auc_std",
@@ -21,11 +25,13 @@ TABLE_METRICS: tuple[str, ...] = (
 
 
 def rank_runs(client: MlflowClient | None = None) -> list[Run]:
-    """Runs concluídas do experimento, da maior para a menor `cv_pr_auc_mean`.
+    """Runs elegíveis do experimento, da maior para a menor `cv_pr_auc_mean`.
 
-    Só runs com `status = FINISHED`: uma run que cai entre logar a métrica e
-    logar o modelo (`FAILED`) pode ficar no topo do ranking sem ter modelo
-    nenhum para promover.
+    Elegível é a run `FINISHED` que excluiu exatamente `LEAKAGE_COLUMNS`:
+    - uma run que cai entre logar a métrica e logar o modelo (`FAILED`) poderia
+      ficar no topo sem ter modelo nenhum para promover;
+    - uma run treinada com as colunas de vazamento (referência, ou anterior à
+      exclusão) teria PR-AUC artificialmente alta e viraria `champion`.
     """
     client = client or MlflowClient()
     experiment = client.get_experiment_by_name(MLFLOW_EXPERIMENT_NAME)
@@ -33,7 +39,7 @@ def rank_runs(client: MlflowClient | None = None) -> list[Run]:
         return []
     return client.search_runs(
         [experiment.experiment_id],
-        filter_string="attributes.status = 'FINISHED'",
+        filter_string=RANKING_FILTER,
         order_by=[f"metrics.{RANKING_METRIC} DESC"],
     )
 
