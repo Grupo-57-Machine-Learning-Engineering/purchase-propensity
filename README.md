@@ -203,13 +203,21 @@ Resultado atual (`make dvc-metrics`):
 | Random Forest padrão (anterior) | 0,3723 ± 0,0061  | 0,3716        | 0,4956         |
 | Random Forest com tuning        | 0,4041 ± 0,0068  | 0,4022        | 0,4227         |
 
-O Random Forest com tuning lidera com folga: a diferença para a regressão logística
-(0,028) passa de quatro vezes o desvio padrão da cross-validation, então `registry.py`
-passa a promover ele a `champion`. O score da CV é um pouco otimista, porque a busca
-escolheu os parâmetros nesses mesmos folds, mas o holdout de teste, que a busca nunca
-viu, confirma o ganho (0,4022 contra 0,3715). A distância entre treino e teste caiu de
-0,12 para 0,02, então o overfitting do modelo padrão praticamente sumiu. No threshold de
-0,5, o recall sobe para 0,95 com precisão de 0,25 (regressão logística: 0,89 e 0,28).
+**O número honesto do modelo com tuning é o `test_pr_auc` de 0,4022.** O `cv_pr_auc_mean`
+dele (0,4041) é o melhor de 30 candidatos avaliados nesses mesmos folds, então é um pouco
+otimista; o holdout de teste a busca nunca viu. Mesmo por ele, o Random Forest com tuning
+lidera com folga (0,4022 contra 0,3715 da regressão logística), e `registry.py` passa a
+promover ele a `champion`. A distância entre treino e teste caiu de 0,12 para 0,02, então
+o overfitting do modelo padrão praticamente sumiu. No threshold de 0,5, o recall sobe para
+0,95 com precisão de 0,25 (regressão logística: 0,89 e 0,28).
+
+Os três melhores candidatos da busca empatam (0,4041, 0,4039 e 0,4037 de CV): a escolha
+entre eles é ruído. O que importa é o que eles têm em comum, `min_samples_leaf=10` e
+`max_features=0.3`; `n_estimators` e `max_depth` quase não mudam o resultado.
+
+A linha "Random Forest padrão" vem da run anterior ao tuning. Para reproduzi-la, treine
+com `build_random_forest(params={})`, que usa os padrões do scikit-learn no lugar de
+`TUNED_PARAMS`.
 
 A URI e as credenciais do MLflow vêm só do ambiente (`MLFLOW_TRACKING_URI`,
 `MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD`, que podem ficar no `.env`).
