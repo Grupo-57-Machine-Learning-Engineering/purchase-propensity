@@ -45,7 +45,7 @@ purchase-propensity/
 ├── configs/          # configurações e hiperparâmetros
 ├── notebooks/        # EDA e exploração (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
 ├── docs/             # documentação do projeto
-├── reports/          # métricas geradas pelo pipeline DVC
+├── reports/          # métricas do pipeline DVC e resultado da busca de hiperparâmetros
 ├── .github/          # CI e template de PR
 ├── .env.example      # modelo do .env (configurações)
 ├── Dockerfile        # imagem do pipeline (uv, usuário sem privilégios)
@@ -117,6 +117,7 @@ permissão de escrita no repositório do DAGsHub).
 | `make dvc`         | Reproduz o pipeline via DVC (ETL e treino) |
 | `make dvc-metrics` | Mostra as métricas dos modelos (DVC)       |
 | `make dvc-dag`     | Exibe o grafo (DAG) de estágios do DVC     |
+| `make tune-rf`     | Busca hiperparâmetros do Random Forest     |
 | `make pre-commit`  | Roda todos os hooks em todos os arquivos   |
 | `make help`        | Lista todos os alvos                       |
 
@@ -149,6 +150,24 @@ uv run python -m src.training.random_forest
 - **Tracking:** experiment `purchase-propensity`, com as tags `autor`, `git_sha` e
   `dataset_version` (hash do parquet).
 
+### Busca de hiperparâmetros
+
+```bash
+make tune-rf    # random search do Random Forest (lento: cerca de 20 minutos)
+```
+
+As 20 flags binárias formam só ~4.200 combinações distintas nas 318 mil linhas de treino,
+e o Random Forest padrão (árvores sem limite) decorava as raras: PR-AUC de 0,50 no treino
+contra 0,37 no teste. A busca (`src/training/tuning.py`) é um random search de 30
+candidatos por PR-AUC, nos mesmos 5 folds da cross-validation das runs, focado em
+regularização (`min_samples_leaf`, `max_depth`, `max_features`) e no número de árvores.
+
+O resultado vai para `reports/tuning/random_forest.json` (melhores parâmetros e os 10
+melhores candidatos) e para uma run do MLflow com a tag `kind=search`, que fica fora do
+ranking por não ter modelo. Os melhores parâmetros são copiados para `TUNED_PARAMS` em
+`src/training/random_forest.py`: assim o `make dvc` treina sempre o mesmo modelo sem
+rodar a busca, que é cara.
+
 ### Comparação e Model Registry
 
 ```bash
@@ -176,12 +195,29 @@ uv run python -m src.training.registry   # promove o melhor run a champion
   o skops recusa esse tipo por padrão, mas o modelo vem do nosso próprio treino, nunca
   de um arquivo externo.
 
-Resultado atual: regressão logística com `cv_pr_auc_mean` de 0,3761 (desvio 0,0037) e
-Random Forest com 0,3723 (desvio 0,0061). A diferença fica dentro do desvio padrão da
-cross-validation, então os dois empatam, e no holdout também (`test_pr_auc` de 0,3715
-contra 0,3716). O Random Forest padrão ainda tem overfitting (PR-AUC de 0,50 no treino
-contra 0,37 no teste): a regressão logística lidera por falta de tuning do Random
-Forest, não por ser melhor.
+Resultado atual (`make dvc-metrics`):
+
+| Modelo                          | `cv_pr_auc_mean` | `test_pr_auc` | `train_pr_auc` |
+| ------------------------------- | ---------------- | ------------- | -------------- |
+| Regressão logística             | 0,3761 ± 0,0037  | 0,3715        | 0,3762         |
+| Random Forest padrão (anterior) | 0,3723 ± 0,0061  | 0,3716        | 0,4956         |
+| Random Forest com tuning        | 0,4041 ± 0,0068  | 0,4022        | 0,4227         |
+
+**O número honesto do modelo com tuning é o `test_pr_auc` de 0,4022.** O `cv_pr_auc_mean`
+dele (0,4041) é o melhor de 30 candidatos avaliados nesses mesmos folds, então é um pouco
+otimista; o holdout de teste a busca nunca viu. Mesmo por ele, o Random Forest com tuning
+lidera com folga (0,4022 contra 0,3715 da regressão logística), e `registry.py` passa a
+promover ele a `champion`. A distância entre treino e teste caiu de 0,12 para 0,02, então
+o overfitting do modelo padrão praticamente sumiu. No threshold de 0,5, o recall sobe para
+0,95 com precisão de 0,25 (regressão logística: 0,89 e 0,28).
+
+Os três melhores candidatos da busca empatam (0,4041, 0,4039 e 0,4037 de CV): a escolha
+entre eles é ruído. O que importa é o que eles têm em comum, `min_samples_leaf=10` e
+`max_features=0.3`; `n_estimators` e `max_depth` quase não mudam o resultado.
+
+A linha "Random Forest padrão" vem da run anterior ao tuning. Para reproduzi-la, treine
+com `build_random_forest(params={})`, que usa os padrões do scikit-learn no lugar de
+`TUNED_PARAMS`.
 
 A URI e as credenciais do MLflow vêm só do ambiente (`MLFLOW_TRACKING_URI`,
 `MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD`, que podem ficar no `.env`).
