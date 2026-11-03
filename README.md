@@ -33,27 +33,47 @@ e o carrinho é o melhor sinal de intenção de compra.
 ```
 purchase-propensity/
 ├── src/
-│   ├── data/         # ETL: extração, transformação e carga
-│   ├── features/     # pré-processamento
-│   ├── models/       # definição dos modelos
-│   ├── training/     # treino, avaliação e registro no MLflow
-│   ├── config.py     # paths, dataset e leitura do .env
+│   ├── data/         # ETL: extração (Kaggle), transformação e carga em parquet
+│   ├── features/     # seleção de features (tira id, alvo e colunas de vazamento)
+│   ├── models/       # estimadores do scikit-learn (regressão logística, Random Forest)
+│   ├── training/     # split, treino, cross-validation, MLflow, comparação e Registry
+│   ├── pipeline.py   # pipeline de ponta a ponta (usado pelo Docker)
+│   ├── config.py     # paths, leitura do .env e de configs/params.yaml
 │   └── logger.py     # logger centralizado (formato e nível únicos)
-├── tests/            # pytest
-├── data/             # dados locais (fora do git)
-├── models/           # artefatos treinados (não versionados no git)
-├── configs/          # configurações e hiperparâmetros
-├── notebooks/        # EDA e exploração (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
-├── docs/             # documentação do projeto
+├── configs/
+│   └── params.yaml   # seed, split, cross-validation, threshold e hiperparâmetros
+├── tests/            # pytest, espelhando a estrutura de src/
+├── data/             # raw/ (versionado pelo DVC) e processed/ (gerado pelo pipeline)
+├── models/           # vazia: os modelos ficam no MLflow (artefatos e Model Registry)
+├── notebooks/        # EDA (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
+├── docs/             # achados da EDA
 ├── reports/          # métricas do pipeline DVC e resultado da busca de hiperparâmetros
-├── .github/          # CI e template de PR
-├── .env.example      # modelo do .env (configurações)
-├── Dockerfile        # imagem do pipeline (uv, usuário sem privilégios)
+├── .github/          # CI (lint, testes, build Docker), guards de branch e template de PR
+├── .env.example      # modelo do .env (dataset, logs e credenciais do MLflow)
+├── Dockerfile        # imagem do pipeline (uv, só deps de produção, usuário sem root)
 ├── .dockerignore     # contexto de build sem .env, dados nem venv
-├── dvc.yaml          # pipeline DVC (ETL e treino)
-├── pyproject.toml    # dependências (uv)
-└── Makefile
+├── dvc.yaml          # pipeline DVC: etl → train_baseline / train_random_forest → promote
+├── dvc.lock          # hashes de dados, código e parâmetros da última execução
+├── pyproject.toml    # dependências de produção e grupo dev (uv)
+├── uv.lock           # versões exatas de todas as dependências
+└── Makefile          # atalhos (make help)
 ```
+
+## Visão geral técnica
+
+| Tema | Onde está |
+| --- | --- |
+| Clean Code: módulos curtos, type hints, docstrings | `src/`, com ruff (`N`, `ANN`, `PLR0915` com até 20 statements por função) no pre-commit e no CI |
+| POO ou Funcional | Funções puras por etapa; `Experiment` e `SplitData` (dataclasses imutáveis) ligam modelo, dados e fluxo de treino |
+| uv com prod/dev separados e lock | `pyproject.toml` (`dependencies` e grupo `dev`) e `uv.lock`; `uv sync --locked` instala do zero |
+| `.env.example`, `.gitignore`, `.dockerignore` | Na raiz; o `.env` nunca entra no git nem na imagem |
+| Dockerfile funcional | `Dockerfile`: `uv sync --locked --no-dev` e roda o pipeline inteiro; o CI constrói a imagem |
+| DVC: dataset versionado e `dvc.yaml` | `data/raw/training_sample.csv.dvc` (remote no DAGsHub) e `dvc.yaml` com 4 estágios e `params` |
+| Seeds fixados | `seed` em `configs/params.yaml`, usado no split, na cross-validation, nos modelos e na busca |
+| Modelo clássico no Scikit-Learn | Regressão logística e Random Forest (`src/models/`) |
+| MLflow Tracking | Cada run loga parâmetros, métricas, tags e o modelo (`src/training/tracking.py`) |
+| Model Registry | O melhor modelo é registrado e recebe o alias `champion` (`src/training/registry.py`) |
+| Histórico de commits do grupo | Conventional Commits validados por hook e PRs revisados via `develop` |
 
 ## Setup
 
@@ -65,12 +85,21 @@ provisionado pelo uv a partir do `.python-version`.
 make setup        # uv sync + hooks do git
 ```
 
-As configurações (dataset, pasta de dados, nível de log) ficam no `.env`. Ele é opcional:
-sem ele, valem os padrões do `.env.example`. Para mudar algum valor:
+O `make setup` usa `uv sync`, o equivalente do `poetry install`: cria o `.venv` e instala as
+versões exatas do `uv.lock`. Para conferir que o lock está em dia, `uv sync --locked`
+(o CI faz isso); para só as dependências de produção, `uv sync --no-dev` (o Docker faz
+isso).
+
+As configurações da máquina (dataset, pasta de dados, nível de log e credenciais do
+MLflow) ficam no `.env`. Ele é opcional: sem ele, valem os padrões do `.env.example` e o
+MLflow grava localmente. Para mudar algum valor:
 
 ```bash
 cp .env.example .env
 ```
+
+Os parâmetros do treino (seed, tamanho do teste, folds, threshold e hiperparâmetros) ficam
+em `configs/params.yaml`, que vai para o git e é rastreado pelo DVC.
 
 ### Dados e DVC (DAGsHub)
 
@@ -89,9 +118,21 @@ DAGsHub. Há dois jeitos de ter os dados na máquina:
 
   O token sai de [dagshub.com/user/settings/tokens](https://dagshub.com/user/settings/tokens).
 
-O pipeline está em `dvc.yaml`: `etl` gera o parquet, e `train_baseline` e
-`train_random_forest` treinam os dois modelos, logam no MLflow e gravam as métricas em
-`reports/metrics/`. O DVC só reexecuta o estágio cujas dependências mudaram:
+O pipeline está em `dvc.yaml`:
+
+```
+etl ──► train_baseline ──────┐
+  └───► train_random_forest ─┴──► promote
+```
+
+- `etl` gera o parquet a partir do CSV bruto.
+- `train_baseline` e `train_random_forest` treinam os dois modelos, logam a run no MLflow
+  e gravam as métricas em `reports/metrics/`. Cada um depende só do seu código e das suas
+  chaves de `configs/params.yaml`: mudar um hiperparâmetro do Random Forest não retreina a
+  regressão logística.
+- `promote` registra o melhor modelo no Model Registry com o alias `champion`.
+
+O DVC só reexecuta o estágio cujas dependências mudaram:
 
 ```bash
 make dvc            # dvc repro: roda o que estiver desatualizado
@@ -99,9 +140,11 @@ make dvc-metrics    # dvc metrics show: métricas dos dois modelos lado a lado
 make dvc-dag        # grafo dos estágios
 ```
 
-As métricas em `reports/metrics/` vão para o git, então `uv run dvc metrics diff` compara
-o commit atual com o anterior. Quem altera o dataset roda `uv run dvc push` (precisa de
-permissão de escrita no repositório do DAGsHub).
+As métricas em `reports/metrics/` vão para o git, então `uv run dvc metrics diff` e
+`uv run dvc params diff` comparam o commit atual com o anterior. Quando o dataset ou o
+ETL mudam, rode `make dvc`, depois `uv run dvc push` (precisa de permissão de escrita no
+DAGsHub) e commite o `dvc.lock` junto com o código: sem o push, os outros recebem um
+`dvc.lock` que aponta para arquivos que não estão no remote.
 
 ## Comandos (Makefile)
 
@@ -114,10 +157,13 @@ permissão de escrita no repositório do DAGsHub).
 | `make test`        | Roda os testes (pytest)                    |
 | `make etl`         | Baixa o dataset e gera `data/processed/`   |
 | `make eda`         | Reexecuta o notebook de EDA                |
-| `make dvc`         | Reproduz o pipeline via DVC (ETL e treino) |
+| `make pipeline`    | ETL, treino e promoção, sem DVC            |
+| `make dvc`         | Reproduz o pipeline via DVC                |
 | `make dvc-metrics` | Mostra as métricas dos modelos (DVC)       |
 | `make dvc-dag`     | Exibe o grafo (DAG) de estágios do DVC     |
 | `make tune-rf`     | Busca hiperparâmetros do Random Forest     |
+| `make docker-build`| Constrói a imagem Docker                   |
+| `make docker-run`  | Roda o pipeline no container               |
 | `make pre-commit`  | Roda todos os hooks em todos os arquivos   |
 | `make help`        | Lista todos os alvos                       |
 
@@ -145,8 +191,12 @@ uv run python -m src.training.random_forest
 - **Tempo:** duração do treino e da cross-validation (`fit_duration_seconds`,
   `cv_duration_seconds`, `total_duration_seconds`), para comparar modelos na mesma
   tabela.
-- **Reuso:** split, métricas, `fit_and_evaluate` e `cross_validate_model` não dependem do
-  modelo, então Random Forest entra trocando só o estimador (`src/training/random_forest.py`).
+- **Reuso:** o fluxo (split, treino, cross-validation, métricas e MLflow) fica uma vez só
+  em `src/training/experiment.py`. Cada modelo é um `Experiment` com o estimador de
+  `src/models/` e o nome da run, então `src/training/baseline.py` e
+  `src/training/random_forest.py` têm poucas linhas.
+- **Parâmetros:** seed, split, folds, threshold e hiperparâmetros vêm de
+  `configs/params.yaml`, e não do código.
 - **Tracking:** experiment `purchase-propensity`, com as tags `autor`, `git_sha` e
   `dataset_version` (hash do parquet).
 
@@ -164,9 +214,9 @@ regularização (`min_samples_leaf`, `max_depth`, `max_features`) e no número d
 
 O resultado vai para `reports/tuning/random_forest.json` (melhores parâmetros e os 10
 melhores candidatos) e para uma run do MLflow com a tag `kind=search`, que fica fora do
-ranking por não ter modelo. Os melhores parâmetros são copiados para `TUNED_PARAMS` em
-`src/training/random_forest.py`: assim o `make dvc` treina sempre o mesmo modelo sem
-rodar a busca, que é cara.
+ranking por não ter modelo. Os melhores parâmetros são copiados para
+`models.random_forest` em `configs/params.yaml` (um teste confere que os dois batem):
+assim o `make dvc` treina sempre o mesmo modelo sem rodar a busca, que é cara.
 
 ### Comparação e Model Registry
 
@@ -184,7 +234,9 @@ uv run python -m src.training.registry   # promove o melhor run a champion
   artificialmente alta e viraria `champion`.
 - **Registry:** `src/training/registry.py` registra o run do topo dessa comparação no
   MLflow Model Registry e aponta o alias `champion` pra ele (aliases, não mais
-  "stages", que o MLflow 2.9+/3.x descontinuou).
+  "stages", que o MLflow 2.9+/3.x descontinuou). Se o `champion` já é esse modelo, não
+  cria versão nova. Para carregar o modelo promovido:
+  `mlflow.sklearn.load_model("models:/purchase-propensity@champion")`.
 - **Dagshub:** o registro usa `models:/<model_id>` (o `LoggedModel` do MLflow 3.x criado
   por `mlflow.sklearn.log_model(model, name=..., ...)`), não `runs:/<run_id>/model`.
   Contra o servidor do Dagshub, listar e baixar artefato pelo path do run falha (a
@@ -216,8 +268,8 @@ entre eles é ruído. O que importa é o que eles têm em comum, `min_samples_le
 `max_features=0.3`; `n_estimators` e `max_depth` quase não mudam o resultado.
 
 A linha "Random Forest padrão" vem da run anterior ao tuning. Para reproduzi-la, treine
-com `build_random_forest(params={})`, que usa os padrões do scikit-learn no lugar de
-`TUNED_PARAMS`.
+com `build_random_forest(params={})`, que usa os padrões do scikit-learn no lugar dos
+parâmetros de `configs/params.yaml`.
 
 A URI e as credenciais do MLflow vêm só do ambiente (`MLFLOW_TRACKING_URI`,
 `MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD`, que podem ficar no `.env`).
@@ -235,18 +287,22 @@ O `mlflow.db` e a pasta `mlruns/` ficam na raiz e não vão para o git. Sem
 ## Docker
 
 A imagem instala só as dependências de produção (`uv sync --locked --no-dev`), roda como
-usuário sem privilégios e executa o ETL por padrão. O `.env` nunca entra na imagem
+usuário sem privilégios e executa o pipeline inteiro por padrão (`src/pipeline.py`): ETL,
+treino dos dois modelos e promoção do `champion`, na ordem do `dvc.yaml`. O DVC fica fora
+da imagem (é dependência de desenvolvimento). O `.env` nunca entra na imagem
 (`.dockerignore`).
 
 ```bash
-docker build -t purchase-propensity .
+docker build -t purchase-propensity .          # ou: make docker-build
 
-# ETL: baixa o dataset e grava data/processed/customer_propensity.parquet no host
+# Pipeline completo, com as runs indo para o DAGsHub (credenciais do .env)
+docker run --rm --env-file .env -v "$(pwd)/data:/app/data" purchase-propensity
+
+# Pipeline completo sem enviar nada: MLflow local dentro do container
 docker run --rm -v "$(pwd)/data:/app/data" purchase-propensity
 
-# ETL + treino do baseline, tudo dentro do container
-docker run --rm purchase-propensity sh -c \
-  "python -m src.data.pipeline && python -m src.training.baseline"
+# Uma etapa só
+docker run --rm -v "$(pwd)/data:/app/data" purchase-propensity python -m src.data.pipeline
 ```
 
 No PowerShell, troque `$(pwd)` por `${PWD}`. O build usa BuildKit (padrão no Docker
@@ -255,9 +311,9 @@ Desktop; em Docker antigo no Linux, `DOCKER_BUILDKIT=1`).
 - **Dados:** sem `-v`, o que o container gera some quando ele termina. Com
   `-v "$(pwd)/data:/app/data"`, `data/raw` e `data/processed` ficam no host e o
   download do Kaggle não se repete.
-- **MLflow:** sem `MLFLOW_TRACKING_URI`, a run vai para um `mlflow.db` dentro do
-  container (some ao sair). Para enviar ao servidor, passe o `.env`:
-  `docker run --rm --env-file .env purchase-propensity python -m src.training.baseline`.
+- **MLflow:** sem `MLFLOW_TRACKING_URI`, as runs e o Registry vão para um `mlflow.db`
+  dentro do container (some ao sair). Para enviar ao DAGsHub, passe o `.env` com
+  `--env-file .env`.
 - **Tags da run:** dentro do container não há git, então `git_sha` fica `unknown` e
   `autor` vem de `USER` (padrão `app`; sobrescreva com `-e USER=seu-nome`).
 - **Linux com `--user`:** se o bind mount der permissão negada, rode com
