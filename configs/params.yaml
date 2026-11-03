@@ -1,0 +1,31 @@
+# Parâmetros do treino. O src/config.py lê este arquivo, e o dvc.yaml declara cada
+# chave como dependência do estágio que a usa: mudar um valor aqui faz o `dvc repro`
+# retreinar só o modelo afetado, e `dvc params diff` mostra o que mudou entre commits.
+#
+# `class_weight="balanced"` não entra aqui: com 4,2% de positivos, os dois modelos
+# sempre balanceiam as classes (src/models/).
+
+seed: 42
+
+split:
+  test_size: 0.3
+
+cv:
+  folds: 5
+
+# Probabilidade a partir da qual a previsão vira "compra" (precisão e recall).
+threshold: 0.5
+
+models:
+  logistic_regression:
+    C: 1.0
+    max_iter: 1000
+
+  # Melhores parâmetros da busca (`make tune-rf`, em reports/tuning/random_forest.json).
+  # Ficam fixos aqui para o treino não depender da busca, que é cara. Rodou a busca
+  # de novo? Copie o `best_params` do JSON para cá (um teste confere os dois).
+  random_forest:
+    n_estimators: 400
+    max_depth: 12
+    min_samples_leaf: 10
+    max_features: 0.3
