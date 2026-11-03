@@ -129,9 +129,9 @@ def build_report(result: SearchResult, n_iter: int) -> dict[str, Any]:
 
 
 def save_report(report: dict[str, Any], path: Path) -> Path:
-    """Grava o resumo da busca em JSON."""
+    """Grava o resumo da busca em JSON, sempre com LF (igual em qualquer sistema)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
     return path
 
 

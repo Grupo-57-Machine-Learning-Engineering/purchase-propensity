@@ -1,2 +1,4 @@
-# Scripts shell sempre com LF: com CRLF (padrão do git no Windows) o bash quebra.
-*.sh text eol=lf
+# Todo arquivo de texto com LF, em qualquer sistema. Com CRLF (padrão do git no
+# Windows), o bash quebra nos scripts .sh e o DVC, que calcula o hash dos arquivos
+# byte a byte, acusa estágio alterado só por causa do fim de linha.
+* text=auto eol=lf
