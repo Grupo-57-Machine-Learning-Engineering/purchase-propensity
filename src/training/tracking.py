@@ -13,8 +13,8 @@ import subprocess
 from pathlib import Path
 
 import mlflow
-import mlflow.sklearn
 import pandas as pd
+from mlflow.sklearn import log_model
 from sklearn.base import BaseEstimator
 
 from src.config import MLFLOW_EXPERIMENT_NAME, PROJECT_ROOT
@@ -92,7 +92,7 @@ def log_run(
         mlflow.set_tags(tags)
         mlflow.log_params(params)
         mlflow.log_metrics(metrics)
-        mlflow.sklearn.log_model(
+        log_model(
             model,
             name="model",
             input_example=input_example,

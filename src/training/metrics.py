@@ -32,8 +32,8 @@ def compute_metrics(
     return {
         "pr_auc": float(average_precision_score(target_true, proba)),
         "roc_auc": float(roc_auc_score(target_true, proba)),
-        "precision": float(precision_score(target_true, predicted, zero_division=0)),
-        "recall": float(recall_score(target_true, predicted, zero_division=0)),
+        "precision": float(precision_score(target_true, predicted, zero_division=0.0)),
+        "recall": float(recall_score(target_true, predicted, zero_division=0.0)),
     }
 
 
