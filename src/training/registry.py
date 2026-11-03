@@ -16,6 +16,8 @@ import argparse
 
 import mlflow
 from mlflow.entities import Run
+from mlflow.entities.model_registry import ModelVersion
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 
 from src.config import MLFLOW_REGISTERED_MODEL_NAME
@@ -39,25 +41,45 @@ def _best_model_id(client: MlflowClient, run: Run) -> str:
     return model_outputs[0].model_id
 
 
+def _current_champion(client: MlflowClient, name: str) -> ModelVersion | None:
+    """Versão com o alias `champion`, ou `None` se o modelo ou o alias não existirem."""
+    try:
+        return client.get_model_version_by_alias(name, CHAMPION_ALIAS)
+    except MlflowException:
+        return None
+
+
 def promote_best_model(name: str = MLFLOW_REGISTERED_MODEL_NAME) -> str:
-    """Registra o run com maior `cv_pr_auc_mean` e aponta `champion` pra ele."""
+    """Registra o run com maior `cv_pr_auc_mean` e aponta `champion` pra ele.
+
+    Se o `champion` já é esse modelo, não cria versão nova: rodar o pipeline de
+    novo sem mudar o vencedor não enche o Registry de versões repetidas.
+    """
     client = MlflowClient()
     runs = rank_runs(client)
     if not runs:
         raise ValueError("Nenhum run encontrado no experimento para promover.")
-    best_run = runs[0]
+    model_uri = f"models:/{_best_model_id(client, runs[0])}"
 
-    model_id = _best_model_id(client, best_run)
-    result = mlflow.register_model(f"models:/{model_id}", name)
-    client.set_registered_model_alias(name, CHAMPION_ALIAS, result.version)
+    champion = _current_champion(client, name)
+    if champion is not None and champion.source == model_uri:
+        logger.info("%s versao %s já é o champion; nada a promover", name, champion.version)
+        return str(champion.version)
+    return _register_as_champion(client, name, model_uri, runs[0])
+
+
+def _register_as_champion(client: MlflowClient, name: str, model_uri: str, run: Run) -> str:
+    """Cria uma versão nova de `name` a partir de `model_uri` e aponta `champion` pra ela."""
+    version = str(mlflow.register_model(model_uri, name).version)
+    client.set_registered_model_alias(name, CHAMPION_ALIAS, version)
     logger.info(
         "Run %s (%s) promovido a champion: %s versao %s",
-        best_run.info.run_id,
-        best_run.data.params.get("model", "?"),
+        run.info.run_id,
+        run.data.params.get("model", "?"),
         name,
-        result.version,
+        version,
     )
-    return result.version
+    return version
 
 
 def main() -> None:
