@@ -3,9 +3,7 @@
 import json
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-import pytest
 from mlflow.tracking import MlflowClient
 
 from src.config import CV_FOLDS, LEAKAGE_COLUMNS
@@ -17,28 +15,6 @@ from src.training.random_forest import (
     run_random_forest,
 )
 from src.training.split import stratified_split
-
-
-@pytest.fixture
-def processed_file(tmp_path: Path) -> Path:
-    """Parquet sintético no mesmo formato do `make etl`, com ~10% de positivos."""
-    rng = np.random.default_rng(0)
-    size = 800
-    sign_in = rng.random(size) < 0.5
-    ordered = sign_in & (rng.random(size) < 0.2)
-    df = pd.DataFrame(
-        {
-            "user_id": [f"u{i}" for i in range(size)],
-            "sign_in": sign_in,
-            "basket_icon_click": rng.random(size) < 0.5,
-            "saw_checkout": ordered,
-            "checked_delivery_detail": ordered,
-            "ordered": ordered,
-        }
-    )
-    path = tmp_path / "customer_propensity.parquet"
-    df.to_parquet(path, index=False)
-    return path
 
 
 def test_build_random_forest_balances_classes_and_fixes_seed() -> None:

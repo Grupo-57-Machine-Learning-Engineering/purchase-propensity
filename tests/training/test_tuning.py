@@ -3,7 +3,6 @@
 import json
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pytest
 from mlflow.tracking import MlflowClient
@@ -12,33 +11,23 @@ from sklearn.ensemble import RandomForestClassifier
 from src.config import LEAKAGE_COLUMNS
 from src.training import tuning
 from src.training.compare import rank_runs
+from src.training.random_forest import TUNED_PARAMS
 from src.training.split import stratified_split
-from src.training.tuning import build_report, run_search, search_hyperparameters
+from src.training.tuning import (
+    DEFAULT_REPORT_PATH,
+    build_report,
+    run_search,
+    search_hyperparameters,
+)
 
 SMALL_SPACE = {"n_estimators": [5, 10], "min_samples_leaf": [1, 20]}
 
 
-@pytest.fixture
-def processed_file(tmp_path: Path) -> Path:
-    """Parquet sintético no mesmo formato do `make etl`, com ~10% de positivos."""
-    rng = np.random.default_rng(0)
-    size = 800
-    basket = rng.random(size) < 0.5
-    ordered = basket & (rng.random(size) < 0.2)
-    df = pd.DataFrame(
-        {
-            "user_id": [f"u{i}" for i in range(size)],
-            "sign_in": ordered,
-            "basket_icon_click": basket,
-            "returning_user": rng.random(size) < 0.5,
-            "saw_checkout": ordered,
-            "checked_delivery_detail": ordered,
-            "ordered": ordered,
-        }
-    )
-    path = tmp_path / "customer_propensity.parquet"
-    df.to_parquet(path, index=False)
-    return path
+def test_tuned_params_match_the_last_search_report() -> None:
+    # A cópia do JSON para TUNED_PARAMS é manual; este teste pega a divergência.
+    report = json.loads(DEFAULT_REPORT_PATH.read_text(encoding="utf-8"))
+
+    assert report["best_params"] == TUNED_PARAMS
 
 
 def test_search_returns_best_params_from_the_space_and_sorted_candidates(
