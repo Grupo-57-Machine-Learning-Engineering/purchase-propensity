@@ -5,6 +5,9 @@ desbalanceado (cerca de 4,2% de positivos) e a acurácia engana. ROC-AUC entra c
 métrica secundária; precisão e recall dependem do threshold escolhido.
 """
 
+import json
+from pathlib import Path
+
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.metrics import average_precision_score, precision_score, recall_score, roc_auc_score
@@ -37,3 +40,10 @@ def compute_metrics(
 def prefix_metrics(metrics: dict[str, float], prefix: str) -> dict[str, float]:
     """Põe `prefix_` na frente de cada nome, ex.: `pr_auc` vira `test_pr_auc`."""
     return {f"{prefix}_{name}": value for name, value in metrics.items()}
+
+
+def save_metrics(metrics: dict[str, float], path: Path) -> Path:
+    """Grava as métricas em JSON, com as chaves ordenadas (lido pelo `dvc metrics`)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path

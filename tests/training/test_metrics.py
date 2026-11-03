@@ -1,8 +1,11 @@
 """Testes das métricas com dados sintéticos pequenos."""
 
+import json
+from pathlib import Path
+
 import pytest
 
-from src.training.metrics import compute_metrics, prefix_metrics
+from src.training.metrics import compute_metrics, prefix_metrics, save_metrics
 
 TARGET = [0, 0, 0, 0, 1, 1]
 
@@ -55,3 +58,13 @@ def test_single_class_target_raises() -> None:
 
 def test_prefix_metrics_renames_keys() -> None:
     assert prefix_metrics({"pr_auc": 0.5}, "test") == {"test_pr_auc": 0.5}
+
+
+def test_save_metrics_writes_sorted_json_creating_folders(tmp_path: Path) -> None:
+    path = tmp_path / "reports" / "metrics.json"
+
+    save_metrics({"test_pr_auc": 0.4, "cv_pr_auc_mean": 0.3}, path)
+
+    text = path.read_text(encoding="utf-8")
+    assert json.loads(text) == {"cv_pr_auc_mean": 0.3, "test_pr_auc": 0.4}
+    assert text.index("cv_pr_auc_mean") < text.index("test_pr_auc")

@@ -1,0 +1,79 @@
+schema: '2.0'
+stages:
+  etl:
+    cmd: uv run python -m src.data.pipeline
+    deps:
+    - path: data/raw/training_sample.csv
+      hash: md5
+      md5: 4a5b6022871e29508c1687eae75ecc30
+      size: 38658877
+    - path: src/config.py
+      hash: md5
+      md5: 5975eed7ad582a56516f5e6d120fa9e0
+      size: 2805
+    - path: src/data
+      hash: md5
+      md5: e2d67e824d7cda8d3aa71e86c4c0db4e.dir
+      size: 3448
+      nfiles: 5
+    - path: src/logger.py
+      hash: md5
+      md5: a1d924b144c16da97126f9acfa968b2f
+      size: 758
+    outs:
+    - path: data/processed/customer_propensity.parquet
+      hash: md5
+      md5: a3b82ac14bab3767d9cd25f125d9c939
+      size: 14691327
+  train_baseline:
+    cmd: uv run python -m src.training.baseline --metrics-out
+      reports/metrics/baseline.json
+    deps:
+    - path: data/processed/customer_propensity.parquet
+      hash: md5
+      md5: a3b82ac14bab3767d9cd25f125d9c939
+      size: 14691327
+    - path: src/config.py
+      hash: md5
+      md5: 5975eed7ad582a56516f5e6d120fa9e0
+      size: 2805
+    - path: src/logger.py
+      hash: md5
+      md5: a1d924b144c16da97126f9acfa968b2f
+      size: 758
+    - path: src/training
+      hash: md5
+      md5: 14b166d9f901d3478526a21f2a0a1a9d.dir
+      size: 24806
+      nfiles: 10
+    outs:
+    - path: reports/metrics/baseline.json
+      hash: md5
+      md5: 6a2e23f510174c294f2bf91d0e83fdb2
+      size: 494
+  train_random_forest:
+    cmd: uv run python -m src.training.random_forest --metrics-out
+      reports/metrics/random_forest.json
+    deps:
+    - path: data/processed/customer_propensity.parquet
+      hash: md5
+      md5: a3b82ac14bab3767d9cd25f125d9c939
+      size: 14691327
+    - path: src/config.py
+      hash: md5
+      md5: 5975eed7ad582a56516f5e6d120fa9e0
+      size: 2805
+    - path: src/logger.py
+      hash: md5
+      md5: a1d924b144c16da97126f9acfa968b2f
+      size: 758
+    - path: src/training
+      hash: md5
+      md5: 14b166d9f901d3478526a21f2a0a1a9d.dir
+      size: 24806
+      nfiles: 10
+    outs:
+    - path: reports/metrics/random_forest.json
+      hash: md5
+      md5: 124b9aed40f65b2658c66bfeeac4a0dc
+      size: 491
