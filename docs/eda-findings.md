@@ -38,7 +38,7 @@ base é 0,042.
 ## Frequência das flags (seção 5)
 
 A distribuição é muito assimétrica: `loc_uk` (93%) e `device_mobile` (68%) aparecem em
-quase todos os usuários, enquanto 7 flags ficam abaixo de 1%. A menor é `saw_sizecharts`,
+quase todos os usuários, enquanto 6 flags ficam abaixo de 1%. A menor é `saw_sizecharts`,
 com 177 casos; as taxas dessas flags raras têm intervalos de confiança largos.
 
 ## Variáveis mais associadas ao pedido (seção 6)
@@ -123,7 +123,8 @@ outra redundância que justifique remover features.
   recorrentes). Com carrinho, novos e recorrentes convertem quase igual (22,8% e 23,9%). A
   recorrência só diferencia quem ainda não chegou ao carrinho.
 - Dispositivo x recorrência: os efeitos se somam. Recorrente no computador converte
-  8,1%; novo no celular, 2,3%.
+  8,1%; novo no celular, 2,3% (dispositivo principal, na prioridade computador > tablet >
+  celular).
 - Home x recorrência: de 1,4% (novo, sem ver a home) a 10,5% (recorrente que viu a home).
 - Localização: fora do Reino Unido (7% dos usuários), 1,8%; no Reino Unido, 4,4%.
 
@@ -150,12 +151,25 @@ A taxa cresce de forma monotônica: boa candidata a feature derivada.
 | Nulos, ids duplicados, tipos | Nenhum problema | Nenhuma |
 | Linhas repetidas | Usuários distintos com o mesmo padrão | Não remover |
 | Dispositivos | Não exclusivos (1.477 usuários com mais de um) | Manter as 3 flags |
-| Flags raras (< 1%) | 7 flags, a menor com 177 casos | Manter |
+| Flags raras (< 1%) | 6 flags, a menor com 177 casos | Manter |
 | Vazamento | `sign_in`, `saw_checkout`, `checked_delivery_detail` | Fora do cenário principal |
 | Escala | Todas as features são booleanas | Sem normalização nem encoding |
 | Alvo | 4,19% de positivos | Split e validação estratificados |
 
 ## Como aplicar na modelagem (seções 13 e 14)
+
+Recomendações da EDA e como o treino atual as aplica:
+
+| Recomendação | No treino atual |
+| --- | --- |
+| Usar as 20 features abaixo e tirar as 3 de vazamento | Aplicado: `LEAKAGE_COLUMNS` em `src/config.py` e `select_features` em `src/features/selection.py` |
+| Nenhum escalonamento, encoding ou remoção de linhas | Aplicado: o modelo recebe as flags booleanas como estão |
+| Split e validação cruzada estratificados, com seed fixa | Aplicado: `src/training/split.py` e `src/training/cross_validation.py`, seed em `configs/params.yaml` |
+| PR-AUC como métrica principal, sem acurácia | Aplicado: o ranking usa `cv_pr_auc_mean`; também são logados ROC-AUC, precisão e recall |
+| Desbalanceamento com peso de classe ou ajuste de threshold | Peso de classe aplicado (`class_weight="balanced"`); o threshold continua em 0,5 |
+| Precisão e recall no top k% e lift | Ainda não calculados |
+| Features derivadas (`n_comportamentos`, `interagiu_com_carrinho`) | Ainda não usadas |
+| Interação carrinho x contexto | O Random Forest capta interações sozinho; a regressão logística não tem termo de interação |
 
 - Features do modelo (20): `basket_icon_click`, `basket_add_list`,
   `basket_add_detail`, `closed_minibasket_click`, `saw_homepage`, `list_size_dropdown`,
@@ -164,21 +178,17 @@ A taxa cresce de forma monotônica: boa candidata a feature derivada.
   `saw_account_upgrade`, `device_mobile`, `device_computer`, `device_tablet`,
   `returning_user`, `loc_uk`.
 - Excluídas por vazamento (3): `sign_in`, `saw_checkout`, `checked_delivery_detail`.
-  Um cenário com todas as 23 pode ser registrado só como referência do efeito do vazamento.
 - Derivadas candidatas: `n_comportamentos` (soma das 15 flags de carrinho e
   navegação) e `interagiu_com_carrinho` (qualquer uma de `basket_add_list`,
   `basket_add_detail`, `basket_icon_click`).
-- Interação relevante: carrinho x contexto. Modelos de árvore capturam sozinhos; modelo
-  linear precisa de termo de interação.
-- Pré-processamento: nenhum escalonamento, encoding ou remoção de linhas.
-- Validação: split e validação cruzada estratificados, com seed fixa. O mesmo padrão
-  de flags vai aparecer no treino e no teste; é esperado (usuários diferentes), não é
-  vazamento.
-- Métricas: PR-AUC, precision e recall no top k%, lift. Não usar acurácia.
-- Desbalanceamento: pesos de classe ou ajuste do threshold pelo orçamento da campanha.
+- O mesmo padrão de flags aparece no treino e no teste. Isso é esperado (são usuários
+  diferentes) e não é vazamento.
 
 A seção 14 do notebook define essas listas como código (`MODEL_FEATURES`,
-`LEAKY_FEATURES`, `DERIVED_CANDIDATES`), com checagens; o treino deve partir delas.
+`LEAKY_FEATURES`, `DERIVED_CANDIDATES`). O treino não importa o notebook: a lista de
+vazamento está repetida em `LEAKAGE_COLUMNS`, e `tests/features/test_selection.py`
+confere que o id, o alvo e as colunas de vazamento saem das features. No dataset real
+sobram exatamente as 20 features da lista acima.
 
 ## Limitações
 
