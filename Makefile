@@ -1,4 +1,4 @@
-.PHONY: help setup install lint format test etl eda dvc dvc-metrics dvc-dag pre-commit clean
+.PHONY: help setup install lint format test etl eda dvc tune-rf dvc-metrics dvc-dag pre-commit clean
 
 help: ## Lista os alvos disponíveis
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -33,6 +33,9 @@ eda: ## Reexecuta o notebook de EDA (precisa do make etl antes)
 
 dvc: ## Reproduz o pipeline via DVC (ETL e treino dos dois modelos)
 	uv run dvc repro
+
+tune-rf: ## Busca hiperparâmetros do Random Forest (lento; grava reports/tuning/)
+	uv run python -m src.training.tuning
 
 dvc-metrics: ## Mostra as métricas dos modelos registradas pelo DVC
 	uv run dvc metrics show

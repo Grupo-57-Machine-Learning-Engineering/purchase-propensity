@@ -9,6 +9,7 @@ logística pela mesma tabela de métricas (`src/training/compare.py`).
 import argparse
 import time
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -28,14 +29,36 @@ from src.training.split import SplitData, stratified_split
 from src.training.tracking import build_tags, log_run
 from src.training.train import fit_and_evaluate
 
-DEFAULT_RUN_NAME = "random-forest-balanced-no-leakage"
+DEFAULT_RUN_NAME = "random-forest-tuned-no-leakage"
+
+# Melhores parâmetros da busca (`make tune-rf`, detalhes em
+# reports/tuning/random_forest.json). Ficam fixos aqui para o treino do pipeline
+# (`make dvc`) não depender da busca, que é cara. Rodou a busca de novo? Copie o
+# `best_params` do JSON para cá.
+TUNED_PARAMS: dict[str, Any] = {
+    "n_estimators": 400,
+    "max_depth": 12,
+    "min_samples_leaf": 10,
+    "max_features": 0.3,
+}
 
 logger = get_logger(__name__)
 
 
-def build_random_forest(seed: int = RANDOM_SEED) -> RandomForestClassifier:
-    """Random Forest com peso balanceado, por causa dos 4,2% de positivos."""
-    return RandomForestClassifier(class_weight="balanced", n_jobs=-1, random_state=seed)
+def build_random_forest(
+    seed: int = RANDOM_SEED, params: dict[str, Any] | None = None
+) -> RandomForestClassifier:
+    """Random Forest com peso balanceado (4,2% de positivos) e os parâmetros da busca.
+
+    `params` substitui `TUNED_PARAMS`; a busca passa `{}` para partir dos padrões
+    do scikit-learn.
+    """
+    return RandomForestClassifier(
+        class_weight="balanced",
+        n_jobs=-1,
+        random_state=seed,
+        **(TUNED_PARAMS if params is None else params),
+    )
 
 
 def build_params(
@@ -48,6 +71,8 @@ def build_params(
         "model": type(model).__name__,
         "n_estimators": model.n_estimators,
         "max_depth": model.max_depth or -1,
+        "min_samples_leaf": model.min_samples_leaf,
+        "max_features": str(model.max_features),
         "class_weight": str(model.class_weight),
         "seed": RANDOM_SEED,
         "test_size": TEST_SIZE,

@@ -11,6 +11,7 @@ from mlflow.tracking import MlflowClient
 from src.config import CV_FOLDS, LEAKAGE_COLUMNS
 from src.training.random_forest import (
     DEFAULT_RUN_NAME,
+    TUNED_PARAMS,
     build_params,
     build_random_forest,
     run_random_forest,
@@ -47,12 +48,28 @@ def test_build_random_forest_balances_classes_and_fixes_seed() -> None:
     assert model.random_state == 3
 
 
+def test_build_random_forest_uses_tuned_params_by_default() -> None:
+    model = build_random_forest()
+
+    assert TUNED_PARAMS.items() <= model.get_params().items()
+
+
+def test_build_random_forest_params_replace_the_tuned_ones() -> None:
+    model = build_random_forest(params={"min_samples_leaf": 7})
+
+    assert model.min_samples_leaf == 7
+    assert model.class_weight == "balanced"
+
+
 def test_build_params_describes_model_split_and_exclusions(processed_file: Path) -> None:
     data = stratified_split(pd.read_parquet(processed_file))
+    model = build_random_forest()
 
-    params = build_params(build_random_forest(), data, threshold=0.5)
+    params = build_params(model, data, threshold=0.5)
 
     assert params["model"] == "RandomForestClassifier"
+    assert params["min_samples_leaf"] == model.min_samples_leaf
+    assert params["max_features"] == str(model.max_features)
     assert params["n_features"] == 1
     assert params["n_train"] + params["n_test"] == 800
     assert params["excluded_columns"] == ",".join(LEAKAGE_COLUMNS)
