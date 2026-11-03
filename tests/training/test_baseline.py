@@ -1,0 +1,66 @@
+"""Testes do baseline de regressão logística, de ponta a ponta com dados sintéticos."""
+
+import json
+from pathlib import Path
+
+import pandas as pd
+from mlflow.tracking import MlflowClient
+
+from src.config import CV_FOLDS, LEAKAGE_COLUMNS
+from src.training.baseline import DEFAULT_RUN_NAME, build_baseline, build_params, run_baseline
+from src.training.split import stratified_split
+
+
+def test_build_baseline_balances_classes_and_fixes_seed() -> None:
+    model = build_baseline(seed=3)
+
+    assert model.class_weight == "balanced"
+    assert model.random_state == 3
+
+
+def test_build_params_describes_model_split_and_exclusions(processed_file: Path) -> None:
+    data = stratified_split(pd.read_parquet(processed_file))
+
+    params = build_params(build_baseline(), data, threshold=0.5)
+
+    assert params["model"] == "LogisticRegression"
+    assert params["n_features"] == 1
+    assert params["n_train"] + params["n_test"] == 800
+    assert params["excluded_columns"] == ",".join(LEAKAGE_COLUMNS)
+
+
+def test_run_baseline_logs_run_with_metrics_and_tags(
+    processed_file: Path, local_mlflow: MlflowClient
+) -> None:
+    run_id = run_baseline(data_path=processed_file)
+
+    run = local_mlflow.get_run(run_id)
+    assert run.info.run_name == DEFAULT_RUN_NAME
+    assert 0.0 <= run.data.metrics["test_pr_auc"] <= 1.0
+    assert 0.0 <= run.data.metrics["cv_pr_auc_mean"] <= 1.0
+    assert run.data.metrics["fit_duration_seconds"] >= 0.0
+    assert run.data.metrics["cv_duration_seconds"] >= 0.0
+    assert {"autor", "git_sha", "dataset_version"} <= set(run.data.tags)
+    assert run.data.params["excluded_columns"] == ",".join(LEAKAGE_COLUMNS)
+    assert run.data.params["cv_folds"] == str(CV_FOLDS)
+
+
+def test_run_baseline_accepts_custom_run_name(
+    processed_file: Path, local_mlflow: MlflowClient
+) -> None:
+    run_id = run_baseline(data_path=processed_file, run_name="baseline-teste")
+
+    assert local_mlflow.get_run(run_id).info.run_name == "baseline-teste"
+
+
+def test_run_baseline_writes_quality_metrics_for_dvc(
+    processed_file: Path, local_mlflow: MlflowClient, tmp_path: Path
+) -> None:
+    metrics_path = tmp_path / "metrics.json"
+
+    run_baseline(data_path=processed_file, metrics_path=metrics_path)
+
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert 0.0 <= metrics["cv_pr_auc_mean"] <= 1.0
+    assert "test_pr_auc" in metrics
+    assert not any(name.endswith("_seconds") for name in metrics)

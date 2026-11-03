@@ -1,0 +1,5 @@
+# Arquivos que o DVC ignora ao calcular o hash das pastas usadas como dependência
+# (src/data, src/training). Sem isto, o bytecode gerado pelo Python faria o
+# estágio parecer alterado a cada execução.
+__pycache__/
+*.py[cod]

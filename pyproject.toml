@@ -4,7 +4,14 @@ version = "0.1.0"
 description = "Projeto da Fase 2 da Pós Tech de Machine Learning Engineering - FIAP"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
-dependencies = []
+dependencies = [
+    "kagglehub>=1.0",
+    "mlflow>=3.17.1",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "python-dotenv>=1.0",
+    "scikit-learn>=1.9.1",
+]
 
 [dependency-groups]
 dev = [
@@ -12,6 +19,11 @@ dev = [
     "pytest>=8.0",
     "pre-commit>=3.7",
     "commitizen>=3.29",
+    "ipykernel>=6.29",
+    "nbconvert>=7.16",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "dvc>=3.50",
 ]
 
 [tool.uv]
