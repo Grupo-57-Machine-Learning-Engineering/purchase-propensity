@@ -3,7 +3,7 @@
 Random search com os mesmos folds e a mesma métrica da cross-validation
 (`src/training/cross_validation.py`), então o melhor score aqui é comparável com
 o `cv_pr_auc_mean` das runs. A busca não treina o modelo final: os melhores
-parâmetros vão para `TUNED_PARAMS` em `src/training/random_forest.py`, e o treino
+parâmetros vão para `models.random_forest` em `configs/params.yaml`, e o treino
 normal (`make dvc`) usa esses valores. Assim o pipeline continua determinístico e
 a busca, que é cara, só roda quando alguém pede.
 
@@ -15,7 +15,6 @@ promover.
 
 import argparse
 import json
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -34,7 +33,8 @@ from src.config import (
     RANDOM_SEED,
 )
 from src.logger import get_logger
-from src.training.random_forest import build_random_forest
+from src.models.random_forest import build_random_forest
+from src.training.experiment import timed
 from src.training.split import SplitData, stratified_split
 from src.training.tracking import build_tags
 
@@ -89,21 +89,21 @@ def search_hyperparameters(
         cv=StratifiedKFold(n_splits=folds, shuffle=True, random_state=seed),
         refit=False,
         random_state=seed,
-    )
-    search.fit(data.features_train, data.target_train)
-    candidates = (
-        pd.DataFrame(search.cv_results_)
-        .sort_values("rank_test_score")
-        .loc[:, ["params", "mean_test_score", "std_test_score", "mean_fit_time"]]
-        .reset_index(drop=True)
-    )
-    best = candidates.iloc[0]
+    ).fit(data.features_train, data.target_train)
+    candidates = rank_candidates(search.cv_results_)
     return SearchResult(
         best_params=search.best_params_,
-        best_score=float(best["mean_test_score"]),
-        best_score_std=float(best["std_test_score"]),
+        best_score=float(candidates.at[0, "mean_test_score"]),
+        best_score_std=float(candidates.at[0, "std_test_score"]),
         candidates=candidates,
     )
+
+
+def rank_candidates(cv_results: dict[str, Any]) -> pd.DataFrame:
+    """Candidatos da busca, do melhor para o pior score."""
+    columns = ["params", "mean_test_score", "std_test_score", "mean_fit_time"]
+    ranked = pd.DataFrame(cv_results).sort_values("rank_test_score")
+    return ranked.loc[:, columns].reset_index(drop=True)
 
 
 def build_report(result: SearchResult, n_iter: int) -> dict[str, Any]:
@@ -161,18 +161,15 @@ def run_search(
     data = stratified_split(pd.read_parquet(data_path))
     logger.info("Buscando hiperparâmetros: %d candidatos x %d folds", n_iter, CV_FOLDS)
 
-    start = time.perf_counter()
-    result = search_hyperparameters(build_random_forest(params={}), RF_SEARCH_SPACE, data, n_iter)
-    logger.info("Busca concluída em %.0f s", time.perf_counter() - start)
+    result, seconds = timed(
+        lambda: search_hyperparameters(
+            build_random_forest(params={}), RF_SEARCH_SPACE, data, n_iter
+        )
+    )
+    logger.info("Busca concluída em %.0f s; melhores: %s", seconds, result.best_params)
 
     report = build_report(result, n_iter)
     save_report(report, report_path)
-    logger.info(
-        "Melhores parâmetros: %s (cv_pr_auc_mean %.4f ± %.4f)",
-        report["best_params"],
-        report["best_cv_pr_auc_mean"],
-        report["best_cv_pr_auc_std"],
-    )
     run_id = log_search(report, report_path, build_tags(data_path))
     logger.info("Busca registrada no MLflow: %s", run_id)
     return report
