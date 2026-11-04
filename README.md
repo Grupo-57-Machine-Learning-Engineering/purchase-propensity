@@ -7,6 +7,7 @@ do comportamento de navegação. O foco é a engenharia de ML: modelo clássico 
 Scikit-Learn, dados e pipeline versionados com DVC, experimentos e Model Registry
 no MLflow, execução em Docker e API de inferência FastAPI.
 
+- Vídeo de apresentação: https://youtu.be/QiNyHdgYnNY
 - API no ar: https://purchase-propensity-api.onrender.com/docs
 
 ## Dataset
