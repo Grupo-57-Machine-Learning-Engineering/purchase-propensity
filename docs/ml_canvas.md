@@ -9,7 +9,9 @@ estão em [`eda-findings.md`](eda-findings.md) e [`model_card.md`](model_card.md
 
 Uma loja online quer saber quais visitantes têm mais chance de fazer um pedido, para
 concentrar ações (oferta, contato, remarketing) em quem tem mais chance de converter. Só
-4,2% dos visitantes do dataset compram, então agir sobre todos desperdiça esforço.
+4,2% dos visitantes do dataset compram, então agir sobre todos desperdiça esforço. A
+própria descrição do dataset no Kaggle parte desse cenário: hoje a loja gasta com
+remarketing para todos os visitantes, e o modelo serve para achar os mais promissores.
 
 ## Tarefa de ML
 

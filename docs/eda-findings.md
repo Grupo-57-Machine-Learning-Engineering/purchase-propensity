@@ -19,7 +19,8 @@ base da análise de vazamento:
 | Navegação | `saw_homepage`, `list_size_dropdown`, `sort_by`, `image_picker`, `promo_banner_click`, `detail_wishlist_add`, `account_page_click`, `checked_returns_detail`, `saw_delivery`, `saw_sizecharts`, `saw_account_upgrade` |
 | Contexto | `device_mobile`, `device_computer`, `device_tablet`, `returning_user`, `loc_uk` |
 
-O Kaggle documenta só 4 colunas; as descrições das demais vêm da interpretação dos nomes.
+A página do dataset no Kaggle descreve só 4 das 23 flags (`basket_add_detail`, `sign_in`,
+`saw_homepage` e `returning_user`); o significado das outras vem da interpretação dos nomes.
 
 ## Qualidade e estrutura (seção 3)
 
@@ -194,4 +195,4 @@ sobram exatamente as 20 features da lista acima.
 
 Loja fictícia, um único dia de visitas (sem sazonalidade nem validação temporal), só
 flags binárias (sem tempo de sessão nem valor do carrinho). As descrições das colunas
-vêm da interpretação dos nomes: o Kaggle documenta só 4 delas.
+vêm da interpretação dos nomes: o Kaggle descreve só 4 das 23 flags.

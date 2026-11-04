@@ -91,8 +91,8 @@ acima podem variar um pouco.
   orçamento, que o projeto não define.
 - Um único dia de visitas: não há sazonalidade nem validação temporal.
 - Só flags binárias: não há tempo de sessão, valor do carrinho nem histórico de compras.
-- O Kaggle documenta só 4 das 25 colunas. O significado das outras vem da interpretação
-  dos nomes.
+- A página do dataset no Kaggle descreve só 4 das 23 flags. O significado das outras vem
+  da interpretação dos nomes.
 - Sem as colunas de vazamento, o erro mínimo possível fica em 3,9% (seção de vazamento
   da EDA). O modelo não consegue separar bem compradores de não compradores. O valor está
   em ordenar.
