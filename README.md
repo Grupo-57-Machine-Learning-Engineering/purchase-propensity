@@ -5,7 +5,9 @@ Projeto da Fase 2 da Pós Tech de Machine Learning Engineering - FIAP.
 Sistema preditivo para estimar a propensão de compra de um usuário de e-commerce a partir
 do comportamento de navegação. O foco é a engenharia de ML: modelo clássico em
 Scikit-Learn, dados e pipeline versionados com DVC, experimentos e Model Registry
-no MLflow e execução em Docker.
+no MLflow, execução em Docker e API de inferência FastAPI.
+
+- API no ar: https://purchase-propensity-api.onrender.com/docs
 
 ## Dataset
 
@@ -385,7 +387,8 @@ lugar do pipeline, no plano gratuito. Ele publica a branch escolhida ao criar o 
    Render precisa de acesso à organização no GitHub).
 2. Preencha `MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD` (usuário e token do
    DAGsHub). Eles ficam só no painel do Render, nunca no repositório.
-3. Quando o deploy terminar, abra `https://<serviço>.onrender.com/docs`.
+3. Quando o deploy terminar, abra `https://<serviço>.onrender.com/docs`. O serviço do
+   projeto está em https://purchase-propensity-api.onrender.com/docs.
 
 No plano gratuito o serviço dorme após uns 15 minutos sem uso: a primeira chamada
 depois disso demora cerca de um minuto, o tempo de subir o container e baixar o modelo
