@@ -9,17 +9,17 @@ stages:
       size: 38658877
     - path: src/config.py
       hash: md5
-      md5: 5975eed7ad582a56516f5e6d120fa9e0
-      size: 2805
+      md5: 7c18e2730fd9282ff4258845cbc140c9
+      size: 3515
     - path: src/data
       hash: md5
-      md5: e2d67e824d7cda8d3aa71e86c4c0db4e.dir
-      size: 3448
+      md5: 8ace7b0bf61c82281ddc8f78fb107c06.dir
+      size: 3346
       nfiles: 5
     - path: src/logger.py
       hash: md5
-      md5: a1d924b144c16da97126f9acfa968b2f
-      size: 758
+      md5: 01d78e6223b9078a226e965b3a78388d
+      size: 737
     outs:
     - path: data/processed/customer_propensity.parquet
       hash: md5
@@ -35,22 +35,61 @@ stages:
       size: 14691327
     - path: src/config.py
       hash: md5
-      md5: 5975eed7ad582a56516f5e6d120fa9e0
-      size: 2805
-    - path: src/logger.py
+      md5: 7c18e2730fd9282ff4258845cbc140c9
+      size: 3515
+    - path: src/features
       hash: md5
-      md5: a1d924b144c16da97126f9acfa968b2f
-      size: 758
-    - path: src/training
+      md5: a3bfed9b4cb8a897062d143ea5d944b2.dir
+      size: 918
+      nfiles: 2
+    - path: src/models/logistic_regression.py
       hash: md5
-      md5: fdd555713e13f9846aba5e0a58c2deb7.dir
-      size: 33209
-      nfiles: 11
+      md5: a7734ab87bf9540ceb39f577edf9d904
+      size: 989
+    - path: src/training/baseline.py
+      hash: md5
+      md5: fbeaeedaa86ecbfecce4961006544ba2
+      size: 695
+    - path: src/training/cross_validation.py
+      hash: md5
+      md5: 4d577101c867a513ba5866f8005fafff
+      size: 1722
+    - path: src/training/experiment.py
+      hash: md5
+      md5: 0f788da41bb1a95d77d26dedcf8bf03f
+      size: 5448
+    - path: src/training/metrics.py
+      hash: md5
+      md5: e2cbfdb8f991aadeee3d87b6e4eb6646
+      size: 2204
+    - path: src/training/split.py
+      hash: md5
+      md5: c99e6b7988c4f819208b58614ffa2674
+      size: 1301
+    - path: src/training/tracking.py
+      hash: md5
+      md5: 4625edf68287f0d6de50b8471d5bdd36
+      size: 3430
+    - path: src/training/train.py
+      hash: md5
+      md5: cae7871b0ca1ec0c148965faa10e6ddb
+      size: 1397
+    params:
+      configs/params.yaml:
+        cv:
+          folds: 5
+        models.logistic_regression:
+          C: 1.0
+          max_iter: 1000
+        seed: 42
+        split:
+          test_size: 0.3
+        threshold: 0.5
     outs:
     - path: reports/metrics/baseline.json
       hash: md5
-      md5: c152f73b0db38b4a8f2f0aa50d76b7bf
-      size: 492
+      md5: 1268e8b704a5a1eff2ce57eadbe5136c
+      size: 480
   train_random_forest:
     cmd: uv run python -m src.training.random_forest --metrics-out
       reports/metrics/random_forest.json
@@ -61,19 +100,79 @@ stages:
       size: 14691327
     - path: src/config.py
       hash: md5
-      md5: 5975eed7ad582a56516f5e6d120fa9e0
-      size: 2805
-    - path: src/logger.py
+      md5: 7c18e2730fd9282ff4258845cbc140c9
+      size: 3515
+    - path: src/features
       hash: md5
-      md5: a1d924b144c16da97126f9acfa968b2f
-      size: 758
-    - path: src/training
+      md5: a3bfed9b4cb8a897062d143ea5d944b2.dir
+      size: 918
+      nfiles: 2
+    - path: src/models/random_forest.py
       hash: md5
-      md5: fdd555713e13f9846aba5e0a58c2deb7.dir
-      size: 33209
-      nfiles: 11
+      md5: 97abcb0a481b4346ffd9e2b54739378c
+      size: 1316
+    - path: src/training/cross_validation.py
+      hash: md5
+      md5: 4d577101c867a513ba5866f8005fafff
+      size: 1722
+    - path: src/training/experiment.py
+      hash: md5
+      md5: 0f788da41bb1a95d77d26dedcf8bf03f
+      size: 5448
+    - path: src/training/metrics.py
+      hash: md5
+      md5: e2cbfdb8f991aadeee3d87b6e4eb6646
+      size: 2204
+    - path: src/training/random_forest.py
+      hash: md5
+      md5: 6d3ccb03fae63777b97de7152678a6cc
+      size: 655
+    - path: src/training/split.py
+      hash: md5
+      md5: c99e6b7988c4f819208b58614ffa2674
+      size: 1301
+    - path: src/training/tracking.py
+      hash: md5
+      md5: 4625edf68287f0d6de50b8471d5bdd36
+      size: 3430
+    - path: src/training/train.py
+      hash: md5
+      md5: cae7871b0ca1ec0c148965faa10e6ddb
+      size: 1397
+    params:
+      configs/params.yaml:
+        cv:
+          folds: 5
+        models.random_forest:
+          n_estimators: 400
+          max_depth: 12
+          min_samples_leaf: 10
+          max_features: 0.3
+        seed: 42
+        split:
+          test_size: 0.3
+        threshold: 0.5
     outs:
     - path: reports/metrics/random_forest.json
       hash: md5
-      md5: 8632ecb825065344cfb22132172d646b
-      size: 490
+      md5: 6ff19f2bfcf00a07ed258af3a61d1637
+      size: 476
+  promote:
+    cmd: uv run python -m src.training.registry
+    deps:
+    - path: reports/metrics/baseline.json
+      hash: md5
+      md5: 1268e8b704a5a1eff2ce57eadbe5136c
+      size: 480
+    - path: reports/metrics/random_forest.json
+      hash: md5
+      md5: 6ff19f2bfcf00a07ed258af3a61d1637
+      size: 476
+    - path: src/training/compare.py
+      hash: md5
+      md5: 1c3bc7091bbb5f9f1add0626b5d09aa2
+      size: 2569
+    - path: src/training/registry.py
+      hash: md5
+      md5: 502a52d973c3b78bf8a5d0df7cb330e3
+      size: 3665

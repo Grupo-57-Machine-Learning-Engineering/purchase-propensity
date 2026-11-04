@@ -8,10 +8,9 @@ import pytest
 from mlflow.tracking import MlflowClient
 from sklearn.ensemble import RandomForestClassifier
 
-from src.config import LEAKAGE_COLUMNS
+from src.config import LEAKAGE_COLUMNS, RANDOM_FOREST_PARAMS
 from src.training import tuning
 from src.training.compare import rank_runs
-from src.training.random_forest import TUNED_PARAMS
 from src.training.split import stratified_split
 from src.training.tuning import (
     DEFAULT_REPORT_PATH,
@@ -24,10 +23,10 @@ SMALL_SPACE = {"n_estimators": [5, 10], "min_samples_leaf": [1, 20]}
 
 
 def test_tuned_params_match_the_last_search_report() -> None:
-    # A cópia do JSON para TUNED_PARAMS é manual; este teste pega a divergência.
+    # A cópia do JSON para configs/params.yaml é manual; este teste pega a divergência.
     report = json.loads(DEFAULT_REPORT_PATH.read_text(encoding="utf-8"))
 
-    assert report["best_params"] == TUNED_PARAMS
+    assert report["best_params"] == RANDOM_FOREST_PARAMS
 
 
 def test_search_returns_best_params_from_the_space_and_sorted_candidates(

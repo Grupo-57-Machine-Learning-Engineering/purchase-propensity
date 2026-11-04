@@ -1,4 +1,4 @@
-# CI padrão do projeto: lint (ruff) + testes (pytest) via uv.
+# CI padrão do projeto: lint (ruff) + testes (pytest) via uv, e build da imagem Docker.
 # Roda em push e PR para main/develop e valida o código em si.
 # Os guards e a limpeza de branch são workflows separados: guard-no-direct-push-main.yml,
 # guard-pr-base-develop.yml, guard-pr-title.yml e cleanup-merged-branch.yml.
@@ -38,3 +38,17 @@ jobs:
 
       - name: Test (pytest)
         run: make test
+
+  # Garante que a imagem continua construindo (deps de produção + código + configs).
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build da imagem
+        run: docker build -t purchase-propensity .
+
+      # Importa o pipeline e a API dentro da imagem, sem rodar o treino, baixar dados
+      # nem carregar o modelo (a API só carrega o champion quando sobe).
+      - name: Smoke test da imagem
+        run: docker run --rm purchase-propensity python -c "import src.pipeline, src.api.app"

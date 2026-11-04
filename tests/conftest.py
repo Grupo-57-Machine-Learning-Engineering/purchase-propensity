@@ -1,4 +1,4 @@
-"""Fixtures compartilhadas dos testes de treino."""
+"""Fixtures compartilhadas por todos os testes."""
 
 from collections.abc import Iterator
 from pathlib import Path
@@ -8,6 +8,23 @@ import numpy as np
 import pandas as pd
 import pytest
 from mlflow.tracking import MlflowClient
+
+
+@pytest.fixture
+def synthetic_df() -> pd.DataFrame:
+    """200 usuários, 10% de positivos, com as três colunas de vazamento."""
+    size = 200
+    ordered = [i % 10 == 0 for i in range(size)]
+    return pd.DataFrame(
+        {
+            "user_id": [f"u{i}" for i in range(size)],
+            "sign_in": [i % 3 == 0 for i in range(size)],
+            "basket_icon_click": [i % 2 == 0 for i in range(size)],
+            "saw_checkout": ordered,
+            "checked_delivery_detail": ordered,
+            "ordered": ordered,
+        }
+    )
 
 
 @pytest.fixture

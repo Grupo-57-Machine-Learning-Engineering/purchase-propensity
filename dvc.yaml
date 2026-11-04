@@ -1,9 +1,12 @@
 # Pipeline reproduzível: `make dvc` (ou `uv run dvc repro`).
-# Cada estágio declara o que lê (deps) e o que gera (outs/metrics); o DVC só
+# Cada estágio declara o que lê (deps e params) e o que gera (outs/metrics); o DVC só
 # reexecuta o estágio cujas dependências mudaram.
 #
+#   etl ──► train_baseline ──────┐
+#     └───► train_random_forest ─┴──► promote
+#
 # O dataset bruto (data/raw/training_sample.csv) é versionado à parte, com
-# `dvc add`, e fica no remote do DAGsHub.
+# `dvc add`, e fica no remote do DAGsHub. Os parâmetros ficam em configs/params.yaml.
 
 stages:
   etl:
@@ -20,9 +23,23 @@ stages:
     cmd: uv run python -m src.training.baseline --metrics-out reports/metrics/baseline.json
     deps:
       - data/processed/customer_propensity.parquet
-      - src/training
+      - src/features
+      - src/models/logistic_regression.py
+      - src/training/baseline.py
+      - src/training/experiment.py
+      - src/training/split.py
+      - src/training/train.py
+      - src/training/cross_validation.py
+      - src/training/metrics.py
+      - src/training/tracking.py
       - src/config.py
-      - src/logger.py
+    params:
+      - configs/params.yaml:
+          - seed
+          - split
+          - cv
+          - threshold
+          - models.logistic_regression
     metrics:
       # Sem cache: o JSON vai para o git, e `dvc metrics diff` compara versões.
       - reports/metrics/baseline.json:
@@ -32,9 +49,34 @@ stages:
     cmd: uv run python -m src.training.random_forest --metrics-out reports/metrics/random_forest.json
     deps:
       - data/processed/customer_propensity.parquet
-      - src/training
+      - src/features
+      - src/models/random_forest.py
+      - src/training/random_forest.py
+      - src/training/experiment.py
+      - src/training/split.py
+      - src/training/train.py
+      - src/training/cross_validation.py
+      - src/training/metrics.py
+      - src/training/tracking.py
       - src/config.py
-      - src/logger.py
+    params:
+      - configs/params.yaml:
+          - seed
+          - split
+          - cv
+          - threshold
+          - models.random_forest
     metrics:
       - reports/metrics/random_forest.json:
           cache: false
+
+  # Registra no Model Registry a run com maior cv_pr_auc_mean e aponta o alias
+  # `champion` pra ela. Só roda quando alguma métrica muda, e não cria versão nova
+  # se o vencedor continua o mesmo.
+  promote:
+    cmd: uv run python -m src.training.registry
+    deps:
+      - reports/metrics/baseline.json
+      - reports/metrics/random_forest.json
+      - src/training/registry.py
+      - src/training/compare.py

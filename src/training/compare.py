@@ -51,7 +51,7 @@ def format_table(runs: list[Run]) -> str:
     for run in runs:
         model_name = run.data.params.get("model", "?")
         values = [f"{run.data.metrics.get(m, float('nan')):.4f}" for m in TABLE_METRICS]
-        rows.append([run.info.run_name, model_name, *values])
+        rows.append([run.info.run_name or run.info.run_id, model_name, *values])
     widths = [max(len(row[col]) for row in rows) for col in range(len(header))]
     return "\n".join(
         " | ".join(cell.ljust(width) for cell, width in zip(row, widths, strict=True))

@@ -1,4 +1,5 @@
-.PHONY: help setup install lint format test etl eda dvc tune-rf dvc-metrics dvc-dag pre-commit clean
+.PHONY: help setup install lint format test etl eda pipeline dvc tune-rf dvc-metrics dvc-dag \
+	api docker-build docker-run docker-api pre-commit clean
 
 help: ## Lista os alvos disponíveis
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -31,7 +32,10 @@ eda: ## Reexecuta o notebook de EDA (precisa do make etl antes)
 	uv run jupyter nbconvert --to notebook --execute --inplace \
 		--ExecutePreprocessor.record_timing=False notebooks/01_eda.ipynb
 
-dvc: ## Reproduz o pipeline via DVC (ETL e treino dos dois modelos)
+pipeline: ## Roda o pipeline inteiro sem DVC: ETL, treino e promoção do champion
+	uv run python -m src.pipeline
+
+dvc: ## Reproduz o pipeline via DVC (só os estágios desatualizados)
 	uv run dvc repro
 
 tune-rf: ## Busca hiperparâmetros do Random Forest (lento; grava reports/tuning/)
@@ -42,6 +46,20 @@ dvc-metrics: ## Mostra as métricas dos modelos registradas pelo DVC
 
 dvc-dag: ## Mostra o grafo de dependências do pipeline
 	uv run dvc dag
+
+api: ## Sobe a API em http://127.0.0.1:8000 (carrega o champion do MLflow)
+	uv run python -m src.api
+
+docker-build: ## Constrói a imagem Docker
+	docker build -t purchase-propensity .
+
+# MSYS_NO_PATHCONV=1: no Git Bash, impede que o caminho do volume seja convertido (o
+# container receberia uma pasta data vazia). No Linux e no Mac, não tem efeito.
+docker-run: ## Roda o pipeline no container (usa o .env e grava data/ no host)
+	MSYS_NO_PATHCONV=1 docker run --rm --env-file .env -v "$$(pwd)/data:/app/data" purchase-propensity
+
+docker-api: ## Sobe a API no container em http://127.0.0.1:8000 (usa o .env)
+	docker run --rm --env-file .env -p 8000:8000 purchase-propensity python -m src.api
 
 pre-commit: ## Roda todos os hooks de pre-commit em todos os arquivos
 	uv run pre-commit run --all-files
