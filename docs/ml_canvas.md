@@ -66,10 +66,11 @@ acontecem durante a compra (nenhum pedido aconteceu sem `saw_checkout`).
 
 ## Previsões
 
-Hoje as previsões são feitas em lote, carregando o `champion` do Registry
-(`models:/purchase-propensity@champion`) e chamando `predict_proba` sobre as flags. Não
-há API nem agendamento. Como as features só ficam completas no fim da visita, o uso
-natural é em lote após a sessão (por exemplo, remarketing no dia seguinte).
+A API (`src/api/`) carrega o `champion` do Registry
+(`models:/purchase-propensity@champion`) ao subir e devolve o score de até 1.000 visitas
+por chamada (`POST /predict`). Não há agendamento. Como as features só ficam completas no
+fim da visita, o uso natural é em lote após a sessão (por exemplo, remarketing no dia
+seguinte), mandando as visitas do dia para a API.
 
 ## Avaliação offline
 

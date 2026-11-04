@@ -1,7 +1,8 @@
 # Model card: purchase-propensity
 
 Ficha do modelo promovido a `champion` no Model Registry (`purchase-propensity`). O
-projeto não tem deploy: o modelo fica registrado no MLflow do DAGsHub. Os
+modelo fica registrado no MLflow do DAGsHub e é servido pela API (`src/api/`, seção API
+do README), que carrega a versão apontada pelo `champion` ao subir. Os
 números vêm de `reports/metrics/` (gerados pelo `dvc repro`) e das runs do MLflow no
 DAGsHub. A seção [Como reproduzir](#como-reproduzir) mostra de onde sai cada um.
 
