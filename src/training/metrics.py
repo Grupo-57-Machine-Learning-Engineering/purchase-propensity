@@ -32,8 +32,8 @@ def compute_metrics(
     return {
         "pr_auc": float(average_precision_score(target_true, proba)),
         "roc_auc": float(roc_auc_score(target_true, proba)),
-        "precision": float(precision_score(target_true, predicted, zero_division=0)),
-        "recall": float(recall_score(target_true, predicted, zero_division=0)),
+        "precision": float(precision_score(target_true, predicted, zero_division=0.0)),
+        "recall": float(recall_score(target_true, predicted, zero_division=0.0)),
     }
 
 
@@ -43,7 +43,11 @@ def prefix_metrics(metrics: dict[str, float], prefix: str) -> dict[str, float]:
 
 
 def save_metrics(metrics: dict[str, float], path: Path) -> Path:
-    """Grava as métricas em JSON, com as chaves ordenadas (lido pelo `dvc metrics`)."""
+    """Grava as métricas em JSON, com as chaves ordenadas (lido pelo `dvc metrics`).
+
+    Sempre com LF: no Windows o padrão é CRLF, e o hash do DVC mudaria por sistema.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    content = json.dumps(metrics, indent=2, sort_keys=True) + "\n"
+    path.write_text(content, encoding="utf-8", newline="\n")
     return path

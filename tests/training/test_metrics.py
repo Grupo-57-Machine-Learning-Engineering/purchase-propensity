@@ -68,3 +68,9 @@ def test_save_metrics_writes_sorted_json_creating_folders(tmp_path: Path) -> Non
     text = path.read_text(encoding="utf-8")
     assert json.loads(text) == {"cv_pr_auc_mean": 0.3, "test_pr_auc": 0.4}
     assert text.index("cv_pr_auc_mean") < text.index("test_pr_auc")
+
+
+def test_save_metrics_always_writes_lf_line_endings(tmp_path: Path) -> None:
+    path = save_metrics({"pr_auc": 0.4}, tmp_path / "metrics.json")
+
+    assert b"\r\n" not in path.read_bytes()

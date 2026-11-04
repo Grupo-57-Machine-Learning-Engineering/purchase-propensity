@@ -1,4 +1,4 @@
-"""Split estratificado e seleção de features, independentes do modelo.
+"""Split estratificado, independente do modelo.
 
 Qualquer modelo (regressão logística, random forest, HistGB) usa as mesmas
 funções, então todos treinam e são avaliados nas mesmas linhas.
@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from src.config import LEAKAGE_COLUMNS, RANDOM_SEED, TARGET_COLUMN, TEST_SIZE
-from src.data.transform import ID_COLUMN
+from src.features.selection import select_features
 
 
 @dataclass(frozen=True)
@@ -21,19 +21,6 @@ class SplitData:
     features_test: pd.DataFrame
     target_train: pd.Series
     target_test: pd.Series
-
-
-def select_features(
-    df: pd.DataFrame,
-    target: str = TARGET_COLUMN,
-    exclude: tuple[str, ...] = LEAKAGE_COLUMNS,
-) -> pd.DataFrame:
-    """Devolve só as colunas de entrada: sem id, sem alvo e sem as colunas excluídas.
-
-    Levanta `KeyError` se alguma coluna a excluir não existir, para um erro de
-    digitação não deixar uma coluna com vazamento passar em silêncio.
-    """
-    return df.drop(columns=[ID_COLUMN, target, *exclude])
 
 
 def stratified_split(
