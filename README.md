@@ -305,7 +305,9 @@ docker run --rm -v "$(pwd)/data:/app/data" purchase-propensity
 docker run --rm -v "$(pwd)/data:/app/data" purchase-propensity python -m src.data.pipeline
 ```
 
-No PowerShell, troque `$(pwd)` por `${PWD}`. O build usa BuildKit (padrão no Docker
+No PowerShell, troque `$(pwd)` por `${PWD}`. No Git Bash, ponha `MSYS_NO_PATHCONV=1` antes
+do `docker run`: sem isso, o Git Bash converte o caminho e o container recebe uma pasta
+`data` vazia (o `make docker-run` já faz isso). O build usa BuildKit (padrão no Docker
 Desktop; em Docker antigo no Linux, `DOCKER_BUILDKIT=1`).
 
 - **Dados:** sem `-v`, o que o container gera some quando ele termina. Com

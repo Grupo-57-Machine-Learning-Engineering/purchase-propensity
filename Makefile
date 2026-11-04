@@ -50,8 +50,10 @@ dvc-dag: ## Mostra o grafo de dependências do pipeline
 docker-build: ## Constrói a imagem Docker
 	docker build -t purchase-propensity .
 
+# MSYS_NO_PATHCONV=1: no Git Bash, impede que o caminho do volume seja convertido (o
+# container receberia uma pasta data vazia). No Linux e no Mac, não tem efeito.
 docker-run: ## Roda o pipeline no container (usa o .env e grava data/ no host)
-	docker run --rm --env-file .env -v "$$(pwd)/data:/app/data" purchase-propensity
+	MSYS_NO_PATHCONV=1 docker run --rm --env-file .env -v "$$(pwd)/data:/app/data" purchase-propensity
 
 pre-commit: ## Roda todos os hooks de pre-commit em todos os arquivos
 	uv run pre-commit run --all-files
