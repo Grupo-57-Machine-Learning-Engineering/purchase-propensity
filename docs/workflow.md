@@ -35,10 +35,10 @@ O `make dvc` (`dvc repro`) só roda os estágios afetados: mudar o Random Forest
 retreina a regressão logística. No fim, o estágio `promote` aponta o `champion` para a
 melhor run, sem criar versão nova se o vencedor não mudou.
 
-A busca (`make tune-rf`) leva cerca de 20 minutos e não altera o modelo sozinha. Se o
-resultado for melhor, copie o `best_params` de `reports/tuning/random_forest.json` para
-`models.random_forest` em `configs/params.yaml` (um teste confere que os dois batem) e
-rode `make dvc`.
+A busca (`make tune-rf`) é lenta (25 minutos na última execução) e não altera o modelo
+sozinha. Se o resultado for melhor, copie o `best_params` de
+`reports/tuning/random_forest.json` para `models.random_forest` em `configs/params.yaml`
+(um teste confere que os dois batem) e rode `make dvc`.
 
 ## 4. Conferir o resultado
 

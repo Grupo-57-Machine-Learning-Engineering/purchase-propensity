@@ -211,7 +211,7 @@ uv run python -m src.training.random_forest
 ### Busca de hiperparâmetros
 
 ```bash
-make tune-rf    # random search do Random Forest (lento: cerca de 20 minutos)
+make tune-rf    # random search do Random Forest (lento: 25 minutos na última execução)
 ```
 
 As 20 flags binárias formam só ~4.200 combinações distintas nas 318 mil linhas de treino,
