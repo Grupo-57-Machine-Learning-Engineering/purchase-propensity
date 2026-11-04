@@ -28,6 +28,14 @@ análise completa está em [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb). E
 `sign_in`, `saw_checkout` e `checked_delivery_detail` são vazamento e ficam fora do modelo,
 e o carrinho é o melhor sinal de intenção de compra.
 
+### Documentação
+
+- [`docs/model_card.md`](docs/model_card.md): o modelo `champion`, métricas, uso
+  pretendido e limitações.
+- [`docs/ml_canvas.md`](docs/ml_canvas.md): o problema e a solução no formato do ML Canvas.
+- [`docs/workflow.md`](docs/workflow.md): o passo a passo do dia a dia, do setup ao
+  Model Registry.
+
 ## Estrutura
 
 ```
@@ -46,7 +54,7 @@ purchase-propensity/
 ├── data/             # raw/ (versionado pelo DVC) e processed/ (gerado pelo pipeline)
 ├── models/           # vazia: os modelos ficam no MLflow (artefatos e Model Registry)
 ├── notebooks/        # EDA (`NN_tema.ipynb`, ex.: `01_eda.ipynb`)
-├── docs/             # achados da EDA
+├── docs/             # EDA, model card, ML canvas e fluxo de trabalho
 ├── reports/          # métricas do pipeline DVC e resultado da busca de hiperparâmetros
 ├── .github/          # CI (lint, testes, build Docker), guards de branch e template de PR
 ├── .env.example      # modelo do .env (dataset, logs e credenciais do MLflow)
@@ -73,7 +81,7 @@ purchase-propensity/
 | Modelo clássico no Scikit-Learn | Regressão logística e Random Forest (`src/models/`) |
 | MLflow Tracking | Cada run loga parâmetros, métricas, tags e o modelo (`src/training/tracking.py`) |
 | Model Registry | O melhor modelo é registrado e recebe o alias `champion` (`src/training/registry.py`) |
-| Histórico de commits do grupo | Conventional Commits validados por hook e PRs revisados via `develop` |
+| Histórico de commits do grupo | Conventional Commits validados por hook; todo código entra por PR para a `develop` |
 
 ## Setup
 
@@ -203,7 +211,7 @@ uv run python -m src.training.random_forest
 ### Busca de hiperparâmetros
 
 ```bash
-make tune-rf    # random search do Random Forest (lento: cerca de 20 minutos)
+make tune-rf    # random search do Random Forest (lento: 25 minutos na última execução)
 ```
 
 As 20 flags binárias formam só ~4.200 combinações distintas nas 318 mil linhas de treino,
