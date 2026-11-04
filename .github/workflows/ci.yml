@@ -48,6 +48,7 @@ jobs:
       - name: Build da imagem
         run: docker build -t purchase-propensity .
 
-      # Importa o pipeline inteiro dentro da imagem, sem rodar o treino nem baixar dados.
+      # Importa o pipeline e a API dentro da imagem, sem rodar o treino, baixar dados
+      # nem carregar o modelo (a API só carrega o champion quando sobe).
       - name: Smoke test da imagem
-        run: docker run --rm purchase-propensity python -c "import src.pipeline"
+        run: docker run --rm purchase-propensity python -c "import src.pipeline, src.api.app"

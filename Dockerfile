@@ -1,7 +1,9 @@
-# Imagem do pipeline do purchase-propensity: ETL, treino e promoção no Model Registry.
+# Imagem do purchase-propensity: o pipeline (ETL, treino e promoção no Model Registry)
+# e a API que serve o modelo `champion`.
 #
-# Build:  docker build -t purchase-propensity .
-# Run:    docker run --rm --env-file .env -v "$(pwd)/data:/app/data" purchase-propensity
+# Build:     docker build -t purchase-propensity .
+# Pipeline:  docker run --rm --env-file .env -v "$(pwd)/data:/app/data" purchase-propensity
+# API:       docker run --rm --env-file .env -p 8000:8000 purchase-propensity python -m src.api
 FROM python:3.11-slim-bookworm
 
 # uv fixado na mesma versão usada no CI (.github/workflows/ci.yml).
@@ -14,7 +16,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.13 /uv /usr/local/bin/uv
 #   home e sem entrada no passwd), útil em bind mount no Linux.
 # - GIT_PYTHON_REFRESH=quiet: a imagem não tem git, então o MLflow não consegue
 #   registrar o git_sha; isto só silencia o aviso longo que ele imprime por isso.
+# - API_HOST=0.0.0.0: a API aceita conexões de fora do container (o padrão fora
+#   dele é só a própria máquina). A porta vem de PORT (padrão 8000).
 ENV UV_COMPILE_BYTECODE=1 \
+    API_HOST=0.0.0.0 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never \
     PYTHONUNBUFFERED=1 \
@@ -50,3 +55,6 @@ USER app
 # Padrão: pipeline de ponta a ponta (src/pipeline.py), na ordem do dvc.yaml.
 # Uma etapa só: docker run ... purchase-propensity python -m src.data.pipeline
 CMD ["python", "-m", "src.pipeline"]
+
+# Porta da API (python -m src.api), quando o container sobe com esse comando.
+EXPOSE 8000

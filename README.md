@@ -5,7 +5,9 @@ Projeto da Fase 2 da Pós Tech de Machine Learning Engineering - FIAP.
 Sistema preditivo para estimar a propensão de compra de um usuário de e-commerce a partir
 do comportamento de navegação. O foco é a engenharia de ML: modelo clássico em
 Scikit-Learn, dados e pipeline versionados com DVC, experimentos e Model Registry
-no MLflow e execução em Docker.
+no MLflow, execução em Docker e API de inferência FastAPI.
+
+- API no ar: https://purchase-propensity-api.onrender.com/docs
 
 ## Dataset
 
@@ -45,6 +47,7 @@ purchase-propensity/
 │   ├── features/     # seleção de features (tira id, alvo e colunas de vazamento)
 │   ├── models/       # estimadores do scikit-learn (regressão logística, Random Forest)
 │   ├── training/     # split, treino, cross-validation, MLflow, comparação e Registry
+│   ├── api/          # API FastAPI que serve o champion (POST /predict, GET /health)
 │   ├── pipeline.py   # pipeline de ponta a ponta (usado pelo Docker)
 │   ├── config.py     # paths, leitura do .env e de configs/params.yaml
 │   └── logger.py     # logger centralizado (formato e nível únicos)
@@ -58,7 +61,8 @@ purchase-propensity/
 ├── reports/          # métricas do pipeline DVC e resultado da busca de hiperparâmetros
 ├── .github/          # CI (lint, testes, build Docker), guards de branch e template de PR
 ├── .env.example      # modelo do .env (dataset, logs e credenciais do MLflow)
-├── Dockerfile        # imagem do pipeline (uv, só deps de produção, usuário sem root)
+├── Dockerfile        # imagem do pipeline e da API (uv, só deps de produção, sem root)
+├── render.yaml       # deploy da API no Render (Blueprint)
 ├── .dockerignore     # contexto de build sem .env, dados nem venv
 ├── dvc.yaml          # pipeline DVC: etl → train_baseline / train_random_forest → promote
 ├── dvc.lock          # hashes de dados, código e parâmetros da última execução
@@ -81,6 +85,7 @@ purchase-propensity/
 | Modelo clássico no Scikit-Learn | Regressão logística e Random Forest (`src/models/`) |
 | MLflow Tracking | Cada run loga parâmetros, métricas, tags e o modelo (`src/training/tracking.py`) |
 | Model Registry | O melhor modelo é registrado e recebe o alias `champion` (`src/training/registry.py`) |
+| API de previsão | FastAPI em `src/api/` carrega o `champion` do Registry; deploy no Render (`render.yaml`) |
 | Histórico de commits do grupo | Conventional Commits validados por hook; todo código entra por PR para a `develop` |
 
 ## Setup
@@ -172,6 +177,8 @@ DAGsHub) e commite o `dvc.lock` junto com o código: sem o push, os outros receb
 | `make tune-rf`     | Busca hiperparâmetros do Random Forest     |
 | `make docker-build`| Constrói a imagem Docker                   |
 | `make docker-run`  | Roda o pipeline no container               |
+| `make api`         | Sobe a API em `http://127.0.0.1:8000`      |
+| `make docker-api`  | Sobe a API no container                    |
 | `make pre-commit`  | Roda todos os hooks em todos os arquivos   |
 | `make help`        | Lista todos os alvos                       |
 
@@ -328,6 +335,64 @@ Desktop; em Docker antigo no Linux, `DOCKER_BUILDKIT=1`).
   `autor` vem de `USER` (padrão `app`; sobrescreva com `-e USER=seu-nome`).
 - **Linux com `--user`:** se o bind mount der permissão negada, rode com
   `--user "$(id -u):$(id -g)"`.
+
+## API
+
+`src/api/` serve o modelo `champion` com FastAPI. Ao subir, a API resolve o alias
+`champion` no Model Registry, carrega aquela versão e confere se o modelo foi treinado
+com as mesmas 20 colunas, na mesma ordem, que ela recebe. Por isso precisa das
+credenciais do MLflow no `.env` (ou no ambiente). Sem `MLFLOW_TRACKING_URI`, procura o
+Registry no `mlflow.db` local (depois de um `make dvc` ou `make pipeline` local).
+
+```bash
+make api            # http://127.0.0.1:8000/docs para testar pelo navegador
+make docker-api     # a mesma API dentro do container (make docker-build antes)
+```
+
+| Endpoint | O que faz |
+| --- | --- |
+| `GET /health` | Estado e versão do modelo carregado |
+| `POST /predict` | Score de 1 a 1.000 visitas por chamada |
+| `GET /docs` | Documentação interativa (Swagger) com exemplo pronto |
+
+Cada visita leva as 20 flags de navegação como booleanos (as 3 colunas de vazamento
+não entram; mandar uma delas dá erro 422) e um `user_id` opcional, devolvido na
+resposta:
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -d '{
+  "visitors": [{"user_id": "visita-1", "basket_icon_click": true, "basket_add_list": false,
+    "basket_add_detail": true, "sort_by": false, "image_picker": false,
+    "account_page_click": false, "promo_banner_click": false, "detail_wishlist_add": false,
+    "list_size_dropdown": false, "closed_minibasket_click": false,
+    "checked_returns_detail": false, "saw_sizecharts": false, "saw_delivery": false,
+    "saw_account_upgrade": false, "saw_homepage": true, "device_mobile": false,
+    "device_computer": true, "device_tablet": false, "returning_user": true,
+    "loc_uk": true}]
+}'
+```
+
+A resposta traz, para cada visita, o `score` (0 a 1) e `purchase` (`score >= threshold`,
+com o `threshold` de `configs/params.yaml`), além da versão do modelo. O score serve para
+ordenar quem tem mais chance de comprar; não é probabilidade calibrada
+([`docs/model_card.md`](docs/model_card.md)).
+
+### Deploy no Render
+
+O `render.yaml` descreve o serviço: a mesma imagem Docker, com `python -m src.api` no
+lugar do pipeline, no plano gratuito. Ele publica a branch escolhida ao criar o Blueprint
+(a `main`, em produção) e só republica depois que o CI passa.
+
+1. No [Render](https://render.com), **New > Blueprint** e escolha este repositório (o
+   Render precisa de acesso à organização no GitHub).
+2. Preencha `MLFLOW_TRACKING_USERNAME` e `MLFLOW_TRACKING_PASSWORD` (usuário e token do
+   DAGsHub). Eles ficam só no painel do Render, nunca no repositório.
+3. Quando o deploy terminar, abra `https://<serviço>.onrender.com/docs`. O serviço do
+   projeto está em https://purchase-propensity-api.onrender.com/docs.
+
+No plano gratuito o serviço dorme após uns 15 minutos sem uso: a primeira chamada
+depois disso demora cerca de um minuto, o tempo de subir o container e baixar o modelo
+do DAGsHub.
 
 ## Fluxo de contribuição
 
