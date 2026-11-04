@@ -26,8 +26,9 @@ def test_health_reports_the_loaded_model(client: TestClient) -> None:
     assert response.json() == {"status": "ok", "model_name": "modelo-teste", "model_version": "3"}
 
 
-def test_root_redirects_to_the_docs(client: TestClient) -> None:
-    response = client.get("/", follow_redirects=False)
+@pytest.mark.parametrize("method", ["GET", "HEAD"])
+def test_root_redirects_to_the_docs(client: TestClient, method: str) -> None:
+    response = client.request(method, "/", follow_redirects=False)
 
     assert response.status_code == 307
     assert response.headers["location"] == "/docs"

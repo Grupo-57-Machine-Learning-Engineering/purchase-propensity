@@ -47,7 +47,8 @@ def create_app(loader: ModelLoader = load_champion) -> FastAPI:
         title="purchase-propensity", version=__version__, description=DESCRIPTION, lifespan=lifespan
     )
 
-    @app.get("/", include_in_schema=False)
+    # HEAD também: serviços de deploy (o Render, por exemplo) sondam a raiz com HEAD.
+    @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
     def root() -> RedirectResponse:
         return RedirectResponse(url="/docs")
 
