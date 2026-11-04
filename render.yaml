@@ -1,6 +1,7 @@
 # Deploy da API no Render (render.com), como Blueprint: New > Blueprint, apontando
 # para este repositório. Usa o mesmo Dockerfile do pipeline, trocando o comando de
 # start pela API. O Render informa a porta em PORT, que `python -m src.api` lê.
+# Publica a branch escolhida ao criar o Blueprint (em produção, a `main`).
 #
 # Usuário e token do MLflow são secretos: não ficam aqui. O Render pede os valores
 # no painel na criação do serviço (sync: false).
@@ -10,7 +11,6 @@ services:
     name: purchase-propensity-api
     runtime: docker
     plan: free
-    branch: main
     dockerfilePath: ./Dockerfile
     dockerContext: .
     dockerCommand: python -m src.api

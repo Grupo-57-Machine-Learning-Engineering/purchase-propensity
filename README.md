@@ -378,7 +378,8 @@ ordenar quem tem mais chance de comprar; não é probabilidade calibrada
 ### Deploy no Render
 
 O `render.yaml` descreve o serviço: a mesma imagem Docker, com `python -m src.api` no
-lugar do pipeline, plano gratuito, publicando a `main` depois que o CI passa.
+lugar do pipeline, no plano gratuito. Ele publica a branch escolhida ao criar o Blueprint
+(a `main`, em produção) e só republica depois que o CI passa.
 
 1. No [Render](https://render.com), **New > Blueprint** e escolha este repositório (o
    Render precisa de acesso à organização no GitHub).
